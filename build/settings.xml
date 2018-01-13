@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <path_files_in>..\src</path_files_in>
+  <path_files_out>..\bin\out</path_files_out>
+  <ignore_files>
+    <file>BaseProgram.cs</file>
+  </ignore_files>
+  <remove_multiline_comments>false</remove_multiline_comments>
+  <remove_newlines>false</remove_newlines>
+  <remove_singleline_comments>false</remove_singleline_comments>
+  <remove_whitespace>true</remove_whitespace>
+</settings>
