@@ -174,6 +174,8 @@ PhysicalGunObject/
         //
         //            Do not edit anything below
         // =================================================
+        const string MOB = "MyObjectBuilder_";
+        const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         /*m*/
         const int VERS_MAJ = 1, VERS_MIN = 6, VERS_REV = 5;
         const string VERS_UPD = "2018-01-13";
@@ -184,8 +186,6 @@ PhysicalGunObject/
         const char TAG_OPEN = '[', TAG_CLOSE = ']';
         const string TAG_PREFIX = "TIM";
         const bool SCAN_COLLECTORS = false, SCAN_DRILLS = false, SCAN_GRINDERS = false, SCAN_WELDERS = false;
-        const string MOB = "MyObjectBuilder_";
-        const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
         static readonly char[] SPACE = new char[] { ' ', '\t', '\u00AD' }, COLON = new char[] { ':' }, NEWLINE = new char[] { '\r', '\n' }, SPACECOMMA = new char[] { ' ', '\t', '\u00AD', ',' };
@@ -414,7 +414,8 @@ PhysicalGunObject/
 
         string GetBlockImpliedType(IMyCubeBlock block, string isub)
         {
-            string rtype = null;
+            string rtype;
+            rtype = null;
             foreach (string itype in subTypes[isub])
             {
                 if (BlockAcceptsTypeSub(block, itype, isub))
@@ -1091,40 +1092,40 @@ PhysicalGunObject/
                 foreach (string line in sb.ToString().Split('\n'))
                 {
                     words = line.ToUpper().Split(SPACE, 4, REE);
-                    if (words.Length < 1)
+                    if (words.Length >= 1)
                     {
-                    }
-                    else if (ParseItemValueText(null, words, itypeCur, out itype, out isub, out p, out amount, out ratio, out force) & itype == itypeCur & itype != "" & isub != "")
-                    {
-                        data = typeSubData[itype][isub];
-                        qtypeSubCols[itype][isub] = new string[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
-                        if ((priority > 0 & (priority < data.qpriority | data.qpriority <= 0)) | (priority == 0 & data.qpriority < 0))
+                        if (ParseItemValueText(null, words, itypeCur, out itype, out isub, out p, out amount, out ratio, out force) & itype == itypeCur & itype != "" & isub != "")
                         {
-                            data.qpriority = priority;
-                            data.minimum = amount;
-                            data.ratio = ratio;
+                            data = typeSubData[itype][isub];
+                            qtypeSubCols[itype][isub] = new string[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
+                            if ((priority > 0 & (priority < data.qpriority | data.qpriority <= 0)) | (priority == 0 & data.qpriority < 0))
+                            {
+                                data.qpriority = priority;
+                                data.minimum = amount;
+                                data.ratio = ratio;
+                            }
+                            else if (priority == data.qpriority)
+                            {
+                                data.minimum = Math.Max(data.minimum, amount);
+                                data.ratio = Math.Max(data.ratio, ratio);
+                            }
                         }
-                        else if (priority == data.qpriority)
+                        else if (ParseItemValueText(null, words, "", out itype, out isub, out p, out amount, out ratio, out force) & itype != itypeCur & itype != "" & isub == "")
                         {
-                            data.minimum = Math.Max(data.minimum, amount);
-                            data.ratio = Math.Max(data.ratio, ratio);
+                            if (!qtypeSubCols.ContainsKey(itypeCur = itype))
+                            {
+                                qtypes.Add(itypeCur);
+                                qtypeSubCols[itypeCur] = new SortedDictionary<string, string[]>();
+                            }
                         }
-                    }
-                    else if (ParseItemValueText(null, words, "", out itype, out isub, out p, out amount, out ratio, out force) & itype != itypeCur & itype != "" & isub == "")
-                    {
-                        if (!qtypeSubCols.ContainsKey(itypeCur = itype))
+                        else if (itypeCur != "")
                         {
-                            qtypes.Add(itypeCur);
-                            qtypeSubCols[itypeCur] = new SortedDictionary<string, string[]>();
+                            qtypeSubCols[itypeCur][words[0]] = words;
                         }
-                    }
-                    else if (itypeCur != "")
-                    {
-                        qtypeSubCols[itypeCur][words[0]] = words;
-                    }
-                    else
-                    {
-                        errors.Add(line);
+                        else
+                        {
+                            errors.Add(line);
+                        }
                     }
                 }
 
@@ -1187,7 +1188,8 @@ PhysicalGunObject/
                     }
                     if (scalesubs.Count > 0)
                     {
-                        scalesubs.Sort((string s1, string s2) => {
+                        scalesubs.Sort((string s1, string s2) =>
+                        {
                             ItemData d1 = typeSubData[qtype][s1], d2 = typeSubData[qtype][s2];
                             long q1 = (long)(d1.amount / d1.ratio), q2 = (long)(d2.amount / d2.ratio);
                             return (q1 == q2) ? d1.ratio.CompareTo(d2.ratio) : q1.CompareTo(q2);
@@ -1405,43 +1407,43 @@ PhysicalGunObject/
                 fields[f] = fields[f].Trim();
                 l = fields[f].Length;
 
-                if (l == 0)
+                if (l != 0)
                 {
-                }
-                else if (fields[f] == "IGNORE")
-                {
-                    amount = 0L;
-                }
-                else if (fields[f] == "OVERRIDE" | fields[f] == "SPLIT")
-                {
-                    // these AIS tags are TIM's default behavior anyway
-                }
-                else if (fields[f][l - 1] == '%' & double.TryParse(fields[f].Substring(0, l - 1), out val))
-                {
-                    ratio = Math.Max(0.0f, (float)(val / 100.0));
-                }
-                else if (fields[f][0] == 'P' & double.TryParse(fields[f].Substring(1), out val))
-                {
-                    priority = Math.Max(1, (int)(val + 0.5));
-                }
-                else
-                {
-                    // check for numeric suffixes
-                    mul = 1.0;
-                    if (fields[f][l - 1] == 'K')
+                    if (fields[f] == "IGNORE")
                     {
-                        l--;
-                        mul = 1e3;
+                        amount = 0L;
                     }
-                    else if (fields[f][l - 1] == 'M')
+                    else if (fields[f] == "OVERRIDE" | fields[f] == "SPLIT")
                     {
-                        l--;
-                        mul = 1e6;
+                        // these AIS tags are TIM's default behavior anyway
                     }
+                    else if (fields[f][l - 1] == '%' & double.TryParse(fields[f].Substring(0, l - 1), out val))
+                    {
+                        ratio = Math.Max(0.0f, (float)(val / 100.0));
+                    }
+                    else if (fields[f][0] == 'P' & double.TryParse(fields[f].Substring(1), out val))
+                    {
+                        priority = Math.Max(1, (int)(val + 0.5));
+                    }
+                    else
+                    {
+                        // check for numeric suffixes
+                        mul = 1.0;
+                        if (fields[f][l - 1] == 'K')
+                        {
+                            l--;
+                            mul = 1e3;
+                        }
+                        else if (fields[f][l - 1] == 'M')
+                        {
+                            l--;
+                            mul = 1e6;
+                        }
 
-                    // try parsing the field as an amount value
-                    if (double.TryParse(fields[f].Substring(0, l), out val))
-                        amount = Math.Max(0L, (long)(val * mul * 1e6 + 0.5));
+                        // try parsing the field as an amount value
+                        if (double.TryParse(fields[f].Substring(0, l), out val))
+                            amount = Math.Max(0L, (long)(val * mul * 1e6 + 0.5));
+                    }
                 }
             }
 
@@ -1693,7 +1695,7 @@ PhysicalGunObject/
                         {
                             if ((double)toInven.CurrentVolume < (double)toInven.MaxVolume / 2 & toInven.Owner != null)
                             {
-                                var/*SerializableDefinitionId*/ bdef = (toInven.Owner as IMyCubeBlock).BlockDefinition;
+                                VRage.ObjectBuilders.SerializableDefinitionId bdef = (toInven.Owner as IMyCubeBlock).BlockDefinition;
                                 AddBlockRestriction(bdef.TypeIdString, bdef.SubtypeName, itype, isub);
                             }
                             s = 0;
@@ -1822,7 +1824,8 @@ PhysicalGunObject/
             // skip refinery:ore assignment if there are no ores or ready refineries
             if (ores.Count > 0 & refineries.Count > 0)
             {
-                ores.Sort((string o1, string o2) => {
+                ores.Sort((string o1, string o2) =>
+                {
                     string i1, i2;
                     if (!ORE_PRODUCT.TryGetValue(o1, out i1)) i1 = o1;
                     if (!ORE_PRODUCT.TryGetValue(o2, out i2)) i2 = o2;
