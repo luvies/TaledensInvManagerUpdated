@@ -46,7 +46,7 @@ version 1.6.5 (2018-01-13)
 
 Unoffical maintained version of TIM.
 
-Steam Workshop: ???
+Steam Workshop: http://steamcommunity.com/sharedfiles/filedetails/?id=1268188438
 User's Guide:   http://steamcommunity.com/sharedfiles/filedetails/?id=546909551
 
 
