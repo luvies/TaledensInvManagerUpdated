@@ -263,3 +263,4 @@ __pycache__/
 
 # Ignore the game lib files (since I'm not allowed to distribute them)
 gamelibs/
+gamelibs
