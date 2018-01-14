@@ -260,3 +260,6 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Ignore the game lib files (since I'm not allowed to distribute them)
+gamelibs/
