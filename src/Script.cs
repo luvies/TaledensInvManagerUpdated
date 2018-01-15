@@ -190,23 +190,79 @@ PhysicalGunObject/
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
         static readonly char[] SPACE = new char[] { ' ', '\t', '\u00AD' }, COLON = new char[] { ':' }, NEWLINE = new char[] { '\r', '\n' }, SPACECOMMA = new char[] { ' ', '\t', '\u00AD', ',' };
-        
+
+        /// <summary>
+        /// The last version of the script that was installed on this block.
+        /// Used for update detection.
+        /// </summary>
         static int lastVersion = 0;
+        /// <summary>
+        /// The header for the statistics panels.
+        /// </summary>
         static string panelStatsHeader = "";
+        /// <summary>
+        /// The logs for each cycle.
+        /// </summary>
         static string[] statsLog = new string[12];
+        /// <summary>
+        /// The total number of calls this script has had since compilation.
+        /// </summary>
         static long totalCallCount = 0;
+        /// <summary>
+        /// The amount of time since the last call.
+        /// </summary>
         static double sinceLastCall = 0.0;
+        /// <summary>
+        /// The number of items transfers this call.
+        /// </summary>
         static int numberTransfers;
+        /// <summary>
+        /// The number of refineries being managed this call.
+        /// </summary>
         static int numberRefineres;
+        /// <summary>
+        /// The number of assemblers being managed this call.
+        /// </summary>
         static int numberAssemblers;
+        /// <summary>
+        /// The length of each cycle.
+        /// As far as I can tell, this is the number of
+        /// separate call to split the steps into.
+        /// </summary>
         static int cycleLength = CYCLE_LENGTH;
+        /// <summary>
+        /// The current step.
+        /// </summary>
         static int cycleStep = 0;
+        /// <summary>
+        /// Whether to rewrite TIM tags.
+        /// </summary>
         static bool rewriteTags = REWRITE_TAGS;
+        /// <summary>
+        /// The opening char for TIM tags.
+        /// </summary>
         static char tagOpen = TAG_OPEN;
+        /// <summary>
+        /// The closing cahr for TIM tags.
+        /// </summary>
         static char tagClose = TAG_CLOSE;
+        /// <summary>
+        /// The prefix string for TIM tags.
+        /// </summary>
         static string tagPrefix = TAG_PREFIX;
+        /// <summary>
+        /// Regex for testing for whether a block has a TIM tag.
+        /// </summary>
         static System.Text.RegularExpressions.Regex tagRegex = null;
+        /// <summary>
+        /// An easter egg variable.
+        /// </summary>
+        [Obsolete]
         static string panelFiller = "";
+        /// <summary>
+        /// Whether a new item (e.g. from a mod) has been found.
+        /// Used to 
+        /// </summary>
         static bool foundNewItem = false;
 
         static Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
