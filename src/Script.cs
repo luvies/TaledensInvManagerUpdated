@@ -346,36 +346,55 @@ PhysicalGunObject/
 
         #endregion
 
+        #region Block & Type/SubType Information
+
+        /// <summary>
+        /// The items that are not allowed in the given block.
+        /// Block Type -> block SubType -> Type -> [SubType].
+        /// </summary>
+        static Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>> blockSubTypeRestrictions = new Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>>();
+        static List<string> types = new List<string>();
+        static Dictionary<string, string> typeLabel = new Dictionary<string, string>();
+        static Dictionary<string, List<string>> typeSubs = new Dictionary<string, List<string>>();
+        static Dictionary<string, long> typeAmount = new Dictionary<string, long>();
+        static List<string> subs = new List<string>();
+        static Dictionary<string, string> subLabel = new Dictionary<string, string>();
+        static Dictionary<string, List<string>> subTypes = new Dictionary<string, List<string>>();
+        static Dictionary<string, Dictionary<string, InventoryItemData>> typeSubData = new Dictionary<string, Dictionary<string, InventoryItemData>>();
+        static Dictionary<MyDefinitionId, ItemId> blueprintItem = new Dictionary<MyDefinitionId, ItemId>();
+
+        #endregion
+
         #region Script state & storage
 
         /// <summary>
         /// The header for the statistics panels.
         /// </summary>
-        static string panelStatsHeader = "";
+        string panelStatsHeader = "";
         /// <summary>
         /// The logs for each cycle.
         /// </summary>
-        static string[] statsLog = new string[12];
+        string[] statsLog = new string[12];
         /// <summary>
         /// The total number of calls this script has had since compilation.
         /// </summary>
-        static long totalCallCount = 0;
+        long totalCallCount = 0;
         /// <summary>
         /// The amount of time since the last call.
         /// </summary>
-        static double sinceLastCall = 0.0;
+        double sinceLastCall = 0.0;
         /// <summary>
         /// The number of items transfers this call.
         /// </summary>
-        static int numberTransfers;
+        int numberTransfers;
         /// <summary>
         /// The number of refineries being managed this call.
         /// </summary>
-        static int numberRefineres;
+        int numberRefineres;
         /// <summary>
         /// The number of assemblers being managed this call.
         /// </summary>
-        static int numberAssemblers;
+        int numberAssemblers;
         /// <summary>
         /// The length of each cycle.
         /// As far as I can tell, this is the number of
@@ -386,15 +405,15 @@ PhysicalGunObject/
         /// <summary>
         /// The current step in the TIM process cycle.
         /// </summary>
-        static int processStep = 0;
+        int processStep = 0;
         /// <summary>
         /// All of the process steps that TIM will need to take,
         /// </summary>
-        static readonly Func<bool>[] processSteps;
+        readonly Func<bool>[] processSteps;
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
-        static System.Text.RegularExpressions.Regex tagRegex = null;
+        System.Text.RegularExpressions.Regex tagRegex = null;
         /// <summary>
         /// An easter egg variable.
         /// </summary>
@@ -408,50 +427,36 @@ PhysicalGunObject/
         /// <summary>
         /// The text to echo at the start of each call.
         /// </summary>
-        static string timUpdateText;
+        string timUpdateText;
 
         /// <summary>
         /// The default quotas.
         /// Seems to be unused so I'm not sure what to do with it.
         /// </summary>
         [Obsolete]
-        static Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
-        /// <summary>
-        /// The items that are not allowed in the given block.
-        /// Block Type -> block SubType -> Type -> [SubType].
-        /// </summary>
-        static Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>> blockSubTypeRestrictions = new Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>>();
+        Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
         /// <summary>
         /// The set of all docked grid (including the current one).
         /// </summary>
-        static HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
-        static List<string> types = new List<string>();
-        static Dictionary<string, string> typeLabel = new Dictionary<string, string>();
-        static Dictionary<string, List<string>> typeSubs = new Dictionary<string, List<string>>();
-        static Dictionary<string, long> typeAmount = new Dictionary<string, long>();
-        static List<string> subs = new List<string>();
-        static Dictionary<string, string> subLabel = new Dictionary<string, string>();
-        static Dictionary<string, List<string>> subTypes = new Dictionary<string, List<string>>();
-        static Dictionary<string, Dictionary<string, InventoryItemData>> typeSubData = new Dictionary<string, Dictionary<string, InventoryItemData>>();
-        static Dictionary<MyDefinitionId, ItemId> blueprintItem = new Dictionary<MyDefinitionId, ItemId>();
-        static Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>> priTypeSubInvenRequest = new Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>>();
-        static Dictionary<IMyTextPanel, int> qpanelPriority = new Dictionary<IMyTextPanel, int>();
-        static Dictionary<IMyTextPanel, List<string>> qpanelTypes = new Dictionary<IMyTextPanel, List<string>>();
-        static Dictionary<IMyTextPanel, List<string>> ipanelTypes = new Dictionary<IMyTextPanel, List<string>>();
-        static List<IMyTextPanel> statusPanels = new List<IMyTextPanel>();
-        static List<IMyTextPanel> debugPanels = new List<IMyTextPanel>();
-        static HashSet<string> debugLogic = new HashSet<string>();
-        static List<string> debugText = new List<string>();
-        static Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockGtag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
-        static Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockTag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
-        static HashSet<IMyInventory> invenLocked = new HashSet<IMyInventory>();
-        static HashSet<IMyInventory> invenHidden = new HashSet<IMyInventory>();
-        static Dictionary<IMyRefinery, HashSet<string>> refineryOres = new Dictionary<IMyRefinery, HashSet<string>>();
-        static Dictionary<IMyAssembler, HashSet<ItemId>> assemblerItems = new Dictionary<IMyAssembler, HashSet<ItemId>>();
-        static Dictionary<IMyFunctionalBlock, ProducerWork> producerWork = new Dictionary<IMyFunctionalBlock, ProducerWork>();
-        static Dictionary<IMyFunctionalBlock, int> producerJam = new Dictionary<IMyFunctionalBlock, int>();
-        static Dictionary<IMyTextPanel, Pair> panelSpan = new Dictionary<IMyTextPanel, Pair>();
-        static Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>> blockErrors = new Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>>();
+        HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
+        Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>> priTypeSubInvenRequest = new Dictionary<int, Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>>();
+        Dictionary<IMyTextPanel, int> qpanelPriority = new Dictionary<IMyTextPanel, int>();
+        Dictionary<IMyTextPanel, List<string>> qpanelTypes = new Dictionary<IMyTextPanel, List<string>>();
+        Dictionary<IMyTextPanel, List<string>> ipanelTypes = new Dictionary<IMyTextPanel, List<string>>();
+        List<IMyTextPanel> statusPanels = new List<IMyTextPanel>();
+        List<IMyTextPanel> debugPanels = new List<IMyTextPanel>();
+        HashSet<string> debugLogic = new HashSet<string>();
+        List<string> debugText = new List<string>();
+        Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockGtag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
+        Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match> blockTag = new Dictionary<IMyTerminalBlock, System.Text.RegularExpressions.Match>();
+        HashSet<IMyInventory> invenLocked = new HashSet<IMyInventory>();
+        HashSet<IMyInventory> invenHidden = new HashSet<IMyInventory>();
+        Dictionary<IMyRefinery, HashSet<string>> refineryOres = new Dictionary<IMyRefinery, HashSet<string>>();
+        Dictionary<IMyAssembler, HashSet<ItemId>> assemblerItems = new Dictionary<IMyAssembler, HashSet<ItemId>>();
+        Dictionary<IMyFunctionalBlock, ProducerWork> producerWork = new Dictionary<IMyFunctionalBlock, ProducerWork>();
+        Dictionary<IMyFunctionalBlock, int> producerJam = new Dictionary<IMyFunctionalBlock, int>();
+        Dictionary<IMyTextPanel, Pair> panelSpan = new Dictionary<IMyTextPanel, Pair>();
+        Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>> blockErrors = new Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>>();
 
         #endregion
 
