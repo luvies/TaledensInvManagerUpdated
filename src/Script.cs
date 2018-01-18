@@ -186,6 +186,7 @@ PhysicalGunObject/
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         delegate string _stringFormat(string format, params object[] args);
+        static readonly _stringFormat _f = string.Format;
         /*m*/
         #region Fields
 
@@ -196,15 +197,11 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-01-13";
+        const string VERSION_UPDATE = "2018-01-1X";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
         readonly string VERSION_NICE_TEXT = _f("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
-        /// <summary>
-        /// Integer value of the script version
-        /// </summary>
-        const int VERSION = (VERSION_MAJOR * 1000000) + (VERSION_MINOR * 1000) + VERSION_REVISION;
 
         #endregion
 
@@ -233,18 +230,7 @@ PhysicalGunObject/
         #region Arguments
 
         #region Defaults
-
-        /// <summary>
-        /// The maximum number of cycles this script has.
-        /// </summary>
-        [Obsolete]
-        const int MAX_CYCLE_STEPS = 11;
-        /// <summary>
-        /// The length of the cycles.
-        /// The higher the length, the less steps it does per call.
-        /// </summary>
-        [Obsolete]
-        const int CYCLE_LENGTH = 1;
+        
         const bool DEFAULT_ARG_REWRITE_TAGS = true;
         const bool DEFAULT_ARG_QUOTA_STABLE = true;
         const char DEFAULT_ARG_TAG_OPEN = '[';
@@ -262,43 +248,43 @@ PhysicalGunObject/
         /// <summary>
         /// Whether to rewrite TIM tags.
         /// </summary>
-        static bool argRewriteTags;
+        bool argRewriteTags;
 
-        static bool argQuotaStable;
+        bool argQuotaStable;
         /// <summary>
         /// The opening char for TIM tags.
         /// </summary>
-        static char argTagOpen;
+        char argTagOpen;
         /// <summary>
         /// The closing cahr for TIM tags.
         /// </summary>
-        static char argTagClose;
+        char argTagClose;
         /// <summary>
         /// The prefix string for TIM tags.
         /// </summary>
-        static string argTagPrefix;
+        string argTagPrefix;
         /// <summary>
         /// Whether to scan collectors.
         /// </summary>
-        static bool argScanCollectors;
+        bool argScanCollectors;
         /// <summary>
         /// Whether to scan drills.
         /// </summary>
-        static bool argScanDrills;
+        bool argScanDrills;
         /// <summary>
         /// Whether to scan grinders.
         /// </summary>
-        static bool argScanGrinders;
+        bool argScanGrinders;
         /// <summary>
         /// Whether to scan welders.
         /// </summary>
-        static bool argScanWelders;
+        bool argScanWelders;
         /// <summary>
         /// Stores the complete arguments that were last processed to
         /// allow checking if they have changed. This causes the arguments
         /// to only be processed if the user has edited them.
         /// </summary>
-        static string completeArguments;
+        string completeArguments;
 
         #endregion
 
@@ -343,7 +329,7 @@ PhysicalGunObject/
         /// <summary>
         /// A shorthand for the <c>string.Format</c> function.
         /// </summary>
-        static readonly _stringFormat _f = string.Format;
+        // the format function will go here
 
         #endregion
 
@@ -385,10 +371,6 @@ PhysicalGunObject/
         /// </summary>
         long totalCallCount = 0;
         /// <summary>
-        /// The amount of time since the last call.
-        /// </summary>
-        double sinceLastCall = 0.0;
-        /// <summary>
         /// The number of items transfers this call.
         /// </summary>
         int numberTransfers;
@@ -401,13 +383,6 @@ PhysicalGunObject/
         /// </summary>
         int numberAssemblers;
         /// <summary>
-        /// The length of each cycle.
-        /// As far as I can tell, this is the number of
-        /// separate call to split the steps into.
-        /// </summary>
-        [Obsolete]
-        static int cycleLength = CYCLE_LENGTH;
-        /// <summary>
         /// The current step in the TIM process cycle.
         /// </summary>
         int processStep = 0;
@@ -419,11 +394,6 @@ PhysicalGunObject/
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
         System.Text.RegularExpressions.Regex tagRegex = null;
-        /// <summary>
-        /// An easter egg variable.
-        /// </summary>
-        [Obsolete]
-        static string panelFiller = "";
         /// <summary>
         /// Whether a new item (e.g. from a mod) has been found.
         /// Used to 
@@ -438,7 +408,7 @@ PhysicalGunObject/
         /// The default quotas.
         /// Seems to be unused so I'm not sure what to do with it.
         /// </summary>
-        [Obsolete]
+        //[Obsolete]
         Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
         /// <summary>
         /// The set of all docked grid (including the current one).
@@ -496,8 +466,8 @@ PhysicalGunObject/
         /// </summary>
         class IgnoreExecutionException : Exception
         {
-            internal IgnoreExecutionException() { }
-            internal IgnoreExecutionException(string message) : base(message) { }
+            public IgnoreExecutionException() { }
+            public IgnoreExecutionException(string message) : base(message) { }
         }
 
         /// <summary>
@@ -506,8 +476,8 @@ PhysicalGunObject/
         /// </summary>
         class PutOffExecutionException : Exception
         {
-            internal PutOffExecutionException() { }
-            internal PutOffExecutionException(string message) : base(message) { }
+            public PutOffExecutionException() { }
+            public PutOffExecutionException(string message) : base(message) { }
         }
 
         #endregion
@@ -519,10 +489,10 @@ PhysicalGunObject/
         /// </summary>
         struct Quota
         {
-            internal int minimum;
-            internal float ratio;
+            public int minimum;
+            public float ratio;
 
-            internal Quota(int m, float r)
+            public Quota(int m, float r)
             {
                 minimum = m;
                 ratio = r;
@@ -534,9 +504,9 @@ PhysicalGunObject/
         /// </summary>
         struct Pair
         {
-            internal int A, B;
+            public int A, B;
 
-            internal Pair(int a, int b)
+            public Pair(int a, int b)
             {
                 A = a;
                 B = b;
@@ -548,9 +518,9 @@ PhysicalGunObject/
         /// </summary>
         struct ItemId
         {
-            internal string type, subType;
+            public string type, subType;
 
-            internal ItemId(string t, string s)
+            public ItemId(string t, string s)
             {
                 type = t;
                 subType = s;
@@ -562,10 +532,10 @@ PhysicalGunObject/
         /// </summary>
         struct ProducerWork
         {
-            internal ItemId item;
-            internal double quantity;
+            public ItemId item;
+            public double quantity;
 
-            internal ProducerWork(ItemId i, double q)
+            public ProducerWork(ItemId i, double q)
             {
                 item = i;
                 quantity = q;
@@ -578,15 +548,15 @@ PhysicalGunObject/
 
         class InventoryItemData
         {
-            internal string type, subType, label;
-            internal MyDefinitionId blueprint;
-            internal long amount, avail, locked, quota, minimum;
-            internal float ratio;
-            internal int qpriority, hold, jam;
-            internal Dictionary<IMyInventory, long> invenTotal;
-            internal Dictionary<IMyInventory, int> invenSlot;
-            internal HashSet<IMyFunctionalBlock> producers;
-            internal Dictionary<string, double> prdSpeed;
+            public string type, subType, label;
+            public MyDefinitionId blueprint;
+            public long amount, avail, locked, quota, minimum;
+            public float ratio;
+            public int qpriority, hold, jam;
+            public Dictionary<IMyInventory, long> invenTotal;
+            public Dictionary<IMyInventory, int> invenSlot;
+            public HashSet<IMyFunctionalBlock> producers;
+            public Dictionary<string, double> prdSpeed;
 
             /// <summary>
             /// Initialises the item with base data.
@@ -597,7 +567,7 @@ PhysicalGunObject/
             /// <param name="ratio"></param>
             /// <param name="label"></param>
             /// <param name="blueprint"></param>
-            internal static void InitItem(string itemType, string itemSubType, long minimum = 0L, float ratio = 0.0f, string label = "", string blueprint = "")
+            public static void InitItem(string itemType, string itemSubType, long minimum = 0L, float ratio = 0.0f, string label = "", string blueprint = "")
             {
                 string itypelabel = itemType, isublabel = itemSubType;
                 itemType = itemType.ToUpper();
@@ -680,7 +650,7 @@ PhysicalGunObject/
             ScreenFormatter.Init();
             panelStatsHeader = (
                 "Taleden's Inventory Manager\n" +
-                "v" + VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_REVISION + " (" + VERSION_UPDATE + ")\n\n" +
+                VERSION_NICE_TEXT + "\n\n" +
                 ScreenFormatter.Format("Run", 80, out unused, 1) +
                 ScreenFormatter.Format("Step", 125 + unused, out unused, 1) +
                 ScreenFormatter.Format("Time", 145 + unused, out unused, 1) +
@@ -951,7 +921,7 @@ PhysicalGunObject/
         /// Processes the block arguments.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepProcessArgs()
+        public void ProcessStepProcessArgs()
         {
 
         }
@@ -960,14 +930,14 @@ PhysicalGunObject/
         /// Scans all the grids and initialises the connections
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepScanGrids()
+        public void ProcessStepScanGrids()
         {
             //Echo(msg = "Scanning grid connectors ...");
             debugText.Add("Scanning grid connectors ...");
             ScanGrids();
         }
 
-        void ProcessStepStandbyCheck()
+        public void ProcessStepStandbyCheck()
         {
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
@@ -995,7 +965,7 @@ PhysicalGunObject/
         /// Scans all inventories to build what blocks need to be processed.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepInventoryScan()
+        public void ProcessStepInventoryScan()
         {
             //Echo(msg = "Scanning inventories ...");
             debugText.Add("Scanning inventories ...");
@@ -1056,7 +1026,7 @@ PhysicalGunObject/
         /// Parses all found block tags.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepParseTags()
+        public void ProcessStepParseTags()
         {
             //Echo(msg = "Scanning tags ...");
             debugText.Add("Scanning tags ...");
@@ -1089,7 +1059,7 @@ PhysicalGunObject/
         /// Adjusts the tracked amounts of items in inventories.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepAmountAdjustment()
+        public void ProcessStepAmountAdjustment()
         {
             //Echo(msg = "Adjusting tallies ...");
             debugText.Add("Adjusting tallies ...");
@@ -1100,7 +1070,7 @@ PhysicalGunObject/
         /// Processes quota panels.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepQuotaPanels()
+        public void ProcessStepQuotaPanels()
         {
             //Echo(msg = "Scanning quota panels ...");
             debugText.Add("Scanning quota panels ...");
@@ -1111,7 +1081,7 @@ PhysicalGunObject/
         /// Processes the limited item allocations.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepLimitedItemRequests()
+        public void ProcessStepLimitedItemRequests()
         {
             //Echo(msg = "Processing limited item requests ...");
             debugText.Add("Processing limited item requests ...");
@@ -1123,7 +1093,7 @@ PhysicalGunObject/
         /// Manages handled refineries.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepManageRefineries()
+        public void ProcessStepManageRefineries()
         {
             //Echo(msg = "Managing refineries ...");
             debugText.Add("Managing refineries ...");
@@ -1134,7 +1104,7 @@ PhysicalGunObject/
         /// Scans all production blocks.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepScanProduction()
+        public void ProcessStepScanProduction()
         {
             //Echo(msg = "Scanning production ...");
             debugText.Add("Scanning production ...");
@@ -1145,7 +1115,7 @@ PhysicalGunObject/
         /// Process unlimited item requests using the remaining items.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepUnlimitedItemRequests()
+        public void ProcessStepUnlimitedItemRequests()
         {
             //Echo(msg = "Processing remaining item requests ...");
             debugText.Add("Processing remaining item requests ...");
@@ -1156,7 +1126,7 @@ PhysicalGunObject/
         /// Manages handled assemblers.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepManageAssemblers()
+        public void ProcessStepManageAssemblers()
         {
             //Echo(msg = "Managing assemblers ...");
             debugText.Add("Managing assemblers ...");
@@ -1167,7 +1137,7 @@ PhysicalGunObject/
         /// Updates all inventory panels.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        void ProcessStepUpdateInventoryPanels()
+        public void ProcessStepUpdateInventoryPanels()
         {
             //Echo(msg = "Updating inventory panels ...");
             debugText.Add("Updating inventory panels ...");
@@ -1819,7 +1789,7 @@ PhysicalGunObject/
                             egg = false;
                             blkPnl.SetValueFloat("FontSize", 0.2f);
                             blkPnl.WritePublicTitle("TIM the Enchanter", false);
-                            blkPnl.WritePublicText(panelFiller, false);
+                            //blkPnl.WritePublicText(panelFiller, false);
                             blkPnl.ShowPublicTextOnScreen();
                             name.Append("THE ENCHANTER ");
                         }

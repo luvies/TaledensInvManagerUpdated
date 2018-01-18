@@ -9,5 +9,5 @@
   <remove_newlines>false</remove_newlines>
   <remove_singleline_comments>false</remove_singleline_comments>
   <remove_whitespace>true</remove_whitespace>
-  <minify_line_length>70</minify_line_length>
+  <minify_line_length>130</minify_line_length>
 </settings>
