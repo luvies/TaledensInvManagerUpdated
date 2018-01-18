@@ -622,6 +622,24 @@ PhysicalGunObject/
 
         public Program()
         {
+            // initialise the process steps we will need to do
+            processSteps = new Func<bool>[]
+            {
+                ProcessStepProcessArgs, // always process arguments first to handle changes
+                ProcessStepScanGrids, // scan grids next to find out if there is another TIM in the terminal system
+                ProcessStepStandbyCheck, // detect if another TIM should run instead and if we should be backup
+                ProcessStepInventoryScan, // do the inventory scanning
+                ProcessStepParseTags, // parse the tags of the blocks we found
+                ProcessStepAmountAdjustment, // adjust item amounts based on what's available
+                ProcessStepQuotaPanels, // handle quota panels
+                ProcessStepLimitedItemRequests, // handle limited item requests
+                ProcessStepManageRefineries, // handle all refineries we need to
+                ProcessStepUnlimitedItemRequests, // handle unlimited item requests
+                ProcessStepManageAssemblers, // handle all assemblers we need to
+                ProcessStepScanProduction, // scan all production blocks and handle them
+                ProcessStepUpdateInventoryPanels, // update all inventory panels
+            };
+
             // initialize panel data
             int unused;
             ScreenFormatter.Init();
@@ -679,36 +697,6 @@ PhysicalGunObject/
             step = numberTransfers = numberRefineres = numberAssemblers = 0;
 
             // ===================== TODO: process step management =====================
-
-            // ProcessArgs
-
-            // process step grid scan
-
-            // process step standby check
-
-            // TODO: API testing
-            //GridTerminalSystem.GetBlocksOfType<IMyShipController>(blocks);
-            //Echo(""+blocks[0].GetInventory(0).Owner);
-
-            // process step inventory scan
-
-            // process step tag parsing
-
-            // process step amount adjustment
-
-            // process step quota panels
-
-            // process step limited item requests
-
-            // process step refinery management
-
-            // process step unlimited item requests
-
-            // process step assembler management
-
-            // process step scan production
-
-            // process step update inv panels
 
             // update script status and debug panels on every cycle step
             processStep++;
