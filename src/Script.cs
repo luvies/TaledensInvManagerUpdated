@@ -1028,6 +1028,7 @@ PhysicalGunObject/
                             argTagClose = char.ToUpper(value[1]);
                             debugText.Add(_f("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
                         }
+                        updateTagRegex = true;
                         break;
                     case "prefix":
                         argTagPrefix = value.ToUpper();
@@ -1035,6 +1036,7 @@ PhysicalGunObject/
                             debugText.Add("Tag prefix disabled");
                         else
                             debugText.Add(_f("Tag prefix is '{0}'", argTagPrefix));
+                        updateTagRegex = true;
                         break;
                     case "scan":
                         switch (value.ToLower())
