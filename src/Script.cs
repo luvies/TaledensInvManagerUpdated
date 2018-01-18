@@ -185,6 +185,7 @@ PhysicalGunObject/
         // =================================================
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
+        delegate string _stringFormat(string format, params object[] args);
         /*m*/
         #region Fields
 
@@ -338,7 +339,7 @@ PhysicalGunObject/
         /// A copy of format in which the format items have been replaced by the string representation
         /// of the corresponding objects in args.
         /// </returns>
-        delegate string _stringFormat(string format, params object[] args);
+        // the delegate will go here after minifier is fixed
         /// <summary>
         /// A shorthand for the <c>string.Format</c> function.
         /// </summary>
