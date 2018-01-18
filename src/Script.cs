@@ -214,10 +214,6 @@ PhysicalGunObject/
         /// </summary>
         const string FORMAT_TIM_UPDATE_TEXT = "Taleden's Inventory Manager\n{0}\nLast run: #{{0}} at {{1}}";
         /// <summary>
-        /// The extension format for <c>timUpdateTextFormat</c> that states that TIM was upgraded.
-        /// </summary>
-        const string FORMAT_TIME_UPDATE_TEXT_VER_CHANGE = "Upgraded from v{0}.{1}.{2}";
-        /// <summary>
         /// The format string for building the tag parser.
         /// {0}: tag open.
         /// {1}: tag close.
@@ -351,12 +347,7 @@ PhysicalGunObject/
         #endregion
 
         #region Script state & storage
-
-        /// <summary>
-        /// The last version of the script that was installed on this block.
-        /// Used for update detection.
-        /// </summary>
-        static int lastVersion = 0;
+        
         /// <summary>
         /// The header for the statistics panels.
         /// </summary>
@@ -607,20 +598,6 @@ PhysicalGunObject/
 
         public Program()
         {
-            // parse stored data
-            foreach (string line in Me.CustomData.Split(NEWLINE, REE))
-            {
-                string[] kv = line.Trim().Split('=');
-                if (kv[0].Equals("TIM_version", OIC))
-                {
-                    if (!int.TryParse(kv[1], out lastVersion) | lastVersion > VERSION)
-                    {
-                        Echo("Invalid prior version: " + lastVersion);
-                        lastVersion = 0;
-                    }
-                }
-            }
-
             // initialize panel data
             int unused;
             ScreenFormatter.Init();
@@ -671,8 +648,6 @@ PhysicalGunObject/
             // output terminal info
             totalCallCount++;
             Echo(_f(timUpdateText, totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
-            if (lastVersion > 0 && lastVersion < VERSION)
-                Echo(_f(FORMAT_TIME_UPDATE_TEXT_VER_CHANGE, lastVersion / 1000000, lastVersion / 1000 % 1000, lastVersion % 1000));
 
             // reset status and debugging data every cycle
             debugText.Clear();
@@ -883,9 +858,6 @@ PhysicalGunObject/
                     debugText.Add(msg);
                 }
                 UpdateInventoryPanels();
-
-                // update persistent data after one full cycle
-                Me.CustomData = "TIM_version=" + (lastVersion = VERSION);
             }
 
             if (step != MAX_CYCLE_STEPS)
@@ -1104,6 +1076,10 @@ PhysicalGunObject/
 
             return true;
         }
+
+        #endregion
+
+        #region Process Steps
 
         #endregion
 
@@ -1715,14 +1691,6 @@ PhysicalGunObject/
                     foreach (string a in attrs)
                     {
                         attr = a.ToUpper();
-                        if (lastVersion < 1005903 & (i = attr.IndexOf(":P")) > 0 & typeSubData.ContainsKey(attr.Substring(0, Math.Min(attr.Length, Math.Max(0, i)))))
-                        {
-                            attr = "QUOTA:" + attr;
-                        }
-                        else if (lastVersion < 1005903 & typeSubData.ContainsKey(attr))
-                        {
-                            attr = "INVEN:" + attr;
-                        }
                         fields = attr.Split(COLON);
                         attr = fields[0];
 
@@ -1822,10 +1790,6 @@ PhysicalGunObject/
                     foreach (string a in attrs)
                     {
                         attr = a.ToUpper();
-                        if (lastVersion < 1005900 & ((blkRfn != null & attr == "ORE") | (blkAsm != null & typeSubData["COMPONENT"].ContainsKey(attr))))
-                        {
-                            attr = "AUTO";
-                        }
                         fields = attr.Split(COLON);
                         attr = fields[0];
 
@@ -1895,17 +1859,8 @@ PhysicalGunObject/
                                 if (blkRfn.Enabled)
                                     (refineryOres.TryGetValue(blkRfn, out ores) ? ores : (refineryOres[blkRfn] = new HashSet<string>())).UnionWith(autoores);
                             }
-                            else
-                            {
-                                if (lastVersion < 1005900)
-                                {
-                                    blkAsm.ClearQueue();
-                                    blkAsm.Repeating = false;
-                                    blkAsm.Enabled = true;
-                                }
-                                if (blkAsm.Enabled)
+                            else if(blkAsm.Enabled)
                                     (assemblerItems.TryGetValue(blkAsm, out items) ? items : (assemblerItems[blkAsm] = new HashSet<ItemId>())).UnionWith(autoitems);
-                            }
                             name.Append(" ");
                         }
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
