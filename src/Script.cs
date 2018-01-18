@@ -457,6 +457,21 @@ PhysicalGunObject/
 
         #endregion
 
+        #region Custom Exceptions
+
+        /// <summary>
+        /// Thrown when the script should abort all execution.
+        /// If caught, then <c>processStep</c> should be reset to 0.
+        /// </summary>
+        public class IgnoreExecutionException : Exception
+        {
+            public IgnoreExecutionException() { }
+            public IgnoreExecutionException(string message) : base(message) { }
+            public IgnoreExecutionException(string message, Exception inner) : base(message, inner) { }
+        }
+
+        #endregion
+
         #region Data Structures
 
         /// <summary>
@@ -664,20 +679,7 @@ PhysicalGunObject/
 
             // process step grid scan
 
-            // search for other TIMs
-            blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
-            i = blocks.IndexOf(Me);
-            j = blocks.FindIndex(block => block.IsFunctional & block.IsWorking);
-            msg = Program.argTagOpen + Program.argTagPrefix + ((blocks.Count > 1) ? (" #" + (i + 1)) : "") + Program.argTagClose;
-            Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, msg, 1) : (Me.CustomName + " " + msg);
-            if (i != j)
-            {
-                Echo("TIM #" + (j + 1) + " is on duty. Standing by.");
-                if (("" + (blocks[j] as IMyProgrammableBlock).TerminalRunArgument).Trim() != ("" + Me.TerminalRunArgument).Trim())
-                    Echo("WARNING: Script arguments do not match TIM #" + (j + 1) + ".");
-                return;
-            }
+            // process step standby check
 
             // TODO: API testing
             //GridTerminalSystem.GetBlocksOfType<IMyShipController>(blocks);
@@ -774,7 +776,7 @@ PhysicalGunObject/
 
         #region Arguments
 
-        bool ProcessScriptArgs()
+        void ProcessScriptArgs()
         {
             bool updateTagRegex = true;
 
@@ -803,33 +805,21 @@ PhysicalGunObject/
                 {
                     case "rewrite":
                         if (hasValue)
-                        {
-                            Echo("Argument 'rewrite' does not have a value");
-                            return false;
-                        }
+                            throw new ArgumentException("Argument 'rewrite' does not have a value");
                         argRewriteTags = true;
                         debugText.Add("Tag rewriting enabled");
                         break;
                     case "norewrite":
                         if (hasValue)
-                        {
-                            Echo("Argument 'norewrite' does not have a value");
-                            return false;
-                        }
+                            throw new ArgumentException("Argument 'norewrite' does not have a value");
                         argRewriteTags = false;
                         debugText.Add("Tag rewriting disabled");
                         break;
                     case "tags":
                         if (value.Length != 2)
-                        {
-                            Echo(_f("Invalid 'tags=' delimiters '{0}': must be exactly two characters", value));
-                            return false;
-                        }
+                            throw new ArgumentException(_f("Invalid 'tags=' delimiters '{0}': must be exactly two characters", value));
                         else if (char.ToUpper(value[0]) == char.ToUpper(value[1]))
-                        {
-                            Echo(_f("Invalid 'tags=' delimiters '{0}': characters must be different", value));
-                            return false;
-                        }
+                            throw new ArgumentException(_f("Invalid 'tags=' delimiters '{0}': characters must be different", value));
                         else
                         {
                             argTagOpen = char.ToUpper(value[0]);
@@ -866,8 +856,7 @@ PhysicalGunObject/
                                 debugText.Add("Enabled scanning of Welders");
                                 break;
                             default:
-                                Echo(_f("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
-                                return false;
+                                throw new ArgumentException(_f("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
                         }
                         break;
                     case "quota":
@@ -882,8 +871,7 @@ PhysicalGunObject/
                                 debugText.Add("Enabled stable dynamic quotas");
                                 break;
                             default:
-                                Echo(_f("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
-                                return false;
+                                throw new ArgumentException(_f("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
                         }
                         break;
                     case "debug":
@@ -891,18 +879,14 @@ PhysicalGunObject/
                         if (argValidDebugValues.Contains(value))
                             debugLogic.Add(value);
                         else
-                        {
-                            Echo(_f("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
+                            throw new ArgumentException(_f("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
                                     value));
-                            return false;
-                        }
                         break;
                     case "TIM_version":
                         break;
                     default:
                         // if an argument is not recognised, abort
-                        Echo(_f("Unrecognized argument: '{0}'", arg));
-                        return false;
+                        throw new ArgumentException(_f("Unrecognized argument: '{0}'", arg));
                 }
             }
 
@@ -911,8 +895,6 @@ PhysicalGunObject/
                     argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
                     argTagOpen, argTagClose, argTagPrefix), // format in args
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
-
-            return true;
         }
 
         #endregion
@@ -944,6 +926,31 @@ PhysicalGunObject/
             //Echo(msg = "Scanning grid connectors ...");
             debugText.Add("Scanning grid connectors ...");
             ScanGrids();
+            return true;
+        }
+
+        bool ProcessStepStandbyCheck()
+        {
+            // search for other TIMs
+            List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
+            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
+
+            // check to see if this block is the first available TIM
+            int selfIndex = blocks.IndexOf(Me); // current index in search
+            int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
+
+            // update custom name based on current index
+            string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + Program.argTagClose;
+            Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : (Me.CustomName + " " + updatedCustomName);
+
+            // if there are other programmable blocks of higher index, then they will execute and we won't
+            if (selfIndex != firstAvailableIndex)
+            {
+                Echo("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
+                if (("" + (blocks[firstAvailableIndex] as IMyProgrammableBlock).TerminalRunArgument).Trim() != ("" + Me.TerminalRunArgument).Trim())
+                    Echo("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
+                throw new IgnoreExecutionException();
+            }
             return true;
         }
 
