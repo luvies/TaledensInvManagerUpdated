@@ -170,6 +170,14 @@ PhysicalGunObject/
         MOB + "SmallMissileLauncherReload:AmmoMagazine/NATO_25x184mm,AmmoMagazine/NATO_5p56x45mm," + NON_AMMO
         ;
 
+        // The maximum run time of the script per call.
+        // Measured in milliseconds.
+        const double MAX_RUN_TIME = 30;
+
+        // The maximum percent load that this script will allow
+        // regardless of how long it has been executing.
+        const double MAX_LOAD = 0.8;
+
         // =================================================
         //                 SCRIPT INTERNALS
         //
@@ -178,18 +186,171 @@ PhysicalGunObject/
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         /*m*/
+        #region Fields
+
+        #region Version
+
+        // current script version
         const int VERSION_MAJOR = 1, VERSION_MINOR = 6, VERSION_REVISION = 5;
+        /// <summary>
+        /// Current script update time.
+        /// </summary>
         const string VERSION_UPDATE = "2018-01-13";
+        /// <summary>
+        /// A formatted string of the script version.
+        /// </summary>
+        readonly string VERSION_NICE_TEXT = _f("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
+        /// <summary>
+        /// Integer value of the script version
+        /// </summary>
         const int VERSION = (VERSION_MAJOR * 1000000) + (VERSION_MINOR * 1000) + VERSION_REVISION;
 
-        const int MAX_CYCLE_STEPS = 11, CYCLE_LENGTH = 1;
-        const bool REWRITE_TAGS = true, QUOTA_STABLE = true;
-        const char TAG_OPEN = '[', TAG_CLOSE = ']';
-        const string TAG_PREFIX = "TIM";
-        const bool SCAN_COLLECTORS = false, SCAN_DRILLS = false, SCAN_GRINDERS = false, SCAN_WELDERS = false;
+        #endregion
+
+        #region Format Strings
+
+        /// <summary>
+        /// The format for the text to echo at the start of each call.
+        /// </summary>
+        const string FORMAT_TIM_UPDATE_TEXT = "Taleden's Inventory Manager\n{0}\nLast run: #{{0}} at {{1}}";
+        /// <summary>
+        /// The extension format for <c>timUpdateTextFormat</c> that states that TIM was upgraded.
+        /// </summary>
+        const string FORMAT_TIME_UPDATE_TEXT_VER_CHANGE = "Upgraded from v{0}.{1}.{2}";
+        /// <summary>
+        /// The format string for building the tag parser.
+        /// {0}: tag open.
+        /// {1}: tag close.
+        /// {2}: tag prefix.
+        /// </summary>
+        const string FORMAT_TAG_REGEX_BASE_PREFIX = @"{0} *{2}(|[ ,]+[^{1}]*){1}";
+        /// <summary>
+        /// The format string for building the tag parser.
+        /// {0}: tag open.
+        /// {2}: tag close.
+        /// </summary>
+        const string FORMAT_TAG_REGEX_BASE_NO_PREFIX = @"{0}([^{1}]*){1}";
+
+        #endregion
+
+        #region Arguments
+
+        #region Defaults
+
+        /// <summary>
+        /// The maximum number of cycles this script has.
+        /// </summary>
+        [Obsolete]
+        const int MAX_CYCLE_STEPS = 11;
+        /// <summary>
+        /// The length of the cycles.
+        /// The higher the length, the less steps it does per call.
+        /// </summary>
+        [Obsolete]
+        const int CYCLE_LENGTH = 1;
+        const bool DEFAULT_ARG_REWRITE_TAGS = true;
+        const bool DEFAULT_ARG_QUOTA_STABLE = true;
+        const char DEFAULT_ARG_TAG_OPEN = '[';
+        const char DEFAULT_ARG_TAG_CLOSE = ']';
+        const string DEFAULT_ARG_TAG_PREFIX = "TIM";
+        const bool DEFAULT_ARG_SCAN_COLLECTORS = false;
+        const bool DEFAULT_ARG_SCAN_DRILLS = false;
+        const bool DEFAULT_ARG_SCAN_GRINDERS = false;
+        const bool DEFAULT_ARG_SCAN_WELDERS = false;
+
+        #endregion
+
+        #region Actual
+
+        /// <summary>
+        /// Whether to rewrite TIM tags.
+        /// </summary>
+        static bool argRewriteTags;
+
+        static bool argQuotaStable;
+        /// <summary>
+        /// The opening char for TIM tags.
+        /// </summary>
+        static char argTagOpen;
+        /// <summary>
+        /// The closing cahr for TIM tags.
+        /// </summary>
+        static char argTagClose;
+        /// <summary>
+        /// The prefix string for TIM tags.
+        /// </summary>
+        static string argTagPrefix;
+        /// <summary>
+        /// Whether to scan collectors.
+        /// </summary>
+        static bool argScanCollectors;
+        /// <summary>
+        /// Whether to scan drills.
+        /// </summary>
+        static bool argScanDrills;
+        /// <summary>
+        /// Whether to scan grinders.
+        /// </summary>
+        static bool argScanGrinders;
+        /// <summary>
+        /// Whether to scan welders.
+        /// </summary>
+        static bool argScanWelders;
+        /// <summary>
+        /// Stores the complete arguments that were last processed to
+        /// allow checking if they have changed. This causes the arguments
+        /// to only be processed if the user has edited them.
+        /// </summary>
+        static string completeArguments;
+
+        #endregion
+
+        #region Handling
+
+        /// <summary>
+        /// The regex used to parse each line of the arguments.
+        /// </summary>
+        const string ARGUMENT_PARSE_REGEX = @"^([^=\n]*)(?:=([^=\n]*))?$";
+        /// <summary>
+        /// The regex used to parse each line of the arguments.
+        /// </summary>
+        readonly System.Text.RegularExpressions.Regex argParseRegex = new System.Text.RegularExpressions.Regex(
+            ARGUMENT_PARSE_REGEX,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Multiline |
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+        /// <summary>
+        /// The valid debug argument values.
+        /// </summary>
+        readonly string[] argValidDebugValues = { "quotas", "sorting", "refineries", "assemblers" };
+
+        #endregion
+
+        #endregion
+
+        #region Helpers
+
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
         static readonly char[] SPACE = new char[] { ' ', '\t', '\u00AD' }, COLON = new char[] { ':' }, NEWLINE = new char[] { '\r', '\n' }, SPACECOMMA = new char[] { ' ', '\t', '\u00AD', ',' };
+        /// <summary>
+        /// The <c>string.Format</c> delegate.
+        /// Used for the shortand version.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="args">An object array that contains zero or more objects to format.</param>
+        /// <returns>
+        /// A copy of format in which the format items have been replaced by the string representation
+        /// of the corresponding objects in args.
+        /// </returns>
+        delegate string _stringFormat(string format, params object[] args);
+        /// <summary>
+        /// A shorthand for the <c>string.Format</c> function.
+        /// </summary>
+        static readonly _stringFormat _f = string.Format;
+
+        #endregion
+
+        #region Script state & storage
 
         /// <summary>
         /// The last version of the script that was installed on this block.
@@ -229,27 +390,12 @@ PhysicalGunObject/
         /// As far as I can tell, this is the number of
         /// separate call to split the steps into.
         /// </summary>
+        [Obsolete]
         static int cycleLength = CYCLE_LENGTH;
         /// <summary>
-        /// The current step.
+        /// The current step in the TIM process cycle.
         /// </summary>
-        static int cycleStep = 0;
-        /// <summary>
-        /// Whether to rewrite TIM tags.
-        /// </summary>
-        static bool rewriteTags = REWRITE_TAGS;
-        /// <summary>
-        /// The opening char for TIM tags.
-        /// </summary>
-        static char tagOpen = TAG_OPEN;
-        /// <summary>
-        /// The closing cahr for TIM tags.
-        /// </summary>
-        static char tagClose = TAG_CLOSE;
-        /// <summary>
-        /// The prefix string for TIM tags.
-        /// </summary>
-        static string tagPrefix = TAG_PREFIX;
+        static int processStep = 0;
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
@@ -264,9 +410,25 @@ PhysicalGunObject/
         /// Used to 
         /// </summary>
         static bool foundNewItem = false;
+        /// <summary>
+        /// The text to echo at the start of each call.
+        /// </summary>
+        static string timUpdateText;
 
+        /// <summary>
+        /// The default quotas.
+        /// Seems to be unused so I'm not sure what to do with it.
+        /// </summary>
+        [Obsolete]
         static Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
+        /// <summary>
+        /// The items that are not allowed in the given block.
+        /// Block Type -> block SubType -> Type -> [SubType].
+        /// </summary>
         static Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>> blockSubTypeRestrictions = new Dictionary<string, Dictionary<string, Dictionary<string, HashSet<string>>>>();
+        /// <summary>
+        /// The set of all docked grid (including the current one).
+        /// </summary>
         static HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
         static List<string> types = new List<string>();
         static Dictionary<string, string> typeLabel = new Dictionary<string, string>();
@@ -295,6 +457,10 @@ PhysicalGunObject/
         static Dictionary<IMyFunctionalBlock, int> producerJam = new Dictionary<IMyFunctionalBlock, int>();
         static Dictionary<IMyTextPanel, Pair> panelSpan = new Dictionary<IMyTextPanel, Pair>();
         static Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>> blockErrors = new Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>>();
+
+        #endregion
+
+        #endregion
 
         #region Data Structures
 
@@ -436,13 +602,11 @@ PhysicalGunObject/
         }
 
         #endregion
-        
+
         #region Entry Points
 
         public Program()
         {
-            int ext;
-
             // parse stored data
             foreach (string line in Me.CustomData.Split(NEWLINE, REE))
             {
@@ -458,17 +622,18 @@ PhysicalGunObject/
             }
 
             // initialize panel data
+            int unused;
             ScreenFormatter.Init();
             panelStatsHeader = (
                 "Taleden's Inventory Manager\n" +
                 "v" + VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_REVISION + " (" + VERSION_UPDATE + ")\n\n" +
-                ScreenFormatter.Format("Run", 80, out ext, 1) +
-                ScreenFormatter.Format("Step", 125 + ext, out ext, 1) +
-                ScreenFormatter.Format("Time", 145 + ext, out ext, 1) +
-                ScreenFormatter.Format("Load", 105 + ext, out ext, 1) +
-                ScreenFormatter.Format("S", 65 + ext, out ext, 1) +
-                ScreenFormatter.Format("R", 65 + ext, out ext, 1) +
-                ScreenFormatter.Format("A", 65 + ext, out ext, 1) +
+                ScreenFormatter.Format("Run", 80, out unused, 1) +
+                ScreenFormatter.Format("Step", 125 + unused, out unused, 1) +
+                ScreenFormatter.Format("Time", 145 + unused, out unused, 1) +
+                ScreenFormatter.Format("Load", 105 + unused, out unused, 1) +
+                ScreenFormatter.Format("S", 65 + unused, out unused, 1) +
+                ScreenFormatter.Format("R", 65 + unused, out unused, 1) +
+                ScreenFormatter.Format("A", 65 + unused, out unused, 1) +
                 "\n\n"
             );
 
@@ -483,7 +648,13 @@ PhysicalGunObject/
             // Set run frequency
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
 
-            Echo("Compiled TIM v" + VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_REVISION + " (" + VERSION_UPDATE + ")");
+            // echo compilation statement
+            Echo("Compiled TIM " + VERSION_NICE_TEXT);
+
+            // format terminal info text
+            timUpdateText = _f(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
+            if (lastVersion > 0 & lastVersion < VERSION)
+                timUpdateText += _f(FORMAT_TIME_UPDATE_TEXT_VER_CHANGE, lastVersion / 1000000, lastVersion / 1000 % 1000, lastVersion % 1000);
         }
 
         public void Main(string argument)
@@ -494,220 +665,26 @@ PhysicalGunObject/
             sinceLastCall = 0.0;
 
             DateTime currentCycleStartTime = DateTime.Now;
-            int i, j, argCycle, step, time, load;
-            bool argRewriteTags, argScanCollectors, argScanDrills, argScanGrinders, argScanWelders, argQuotaStable, toggle;
-            char argTagOpen, argTagClose;
-            string argTagPrefix, msg;
+            int i, j, step, time, load;
+            string msg;
             StringBuilder sb = new StringBuilder();
             List<IMyTerminalBlock> blocks;
 
             // output terminal info
             totalCallCount++;
-            Echo("Taleden's Inventory Manager");
-            Echo("v" + VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_REVISION + " (" + VERSION_UPDATE + ")");
-            Echo("Last Run: #" + totalCallCount + " at " + currentCycleStartTime.ToString("h:mm:ss tt"));
-            if (lastVersion > 0 & lastVersion < VERSION)
-                Echo("Upgraded from v" + (lastVersion / 1000000) + "." + (lastVersion / 1000 % 1000) + "." + (lastVersion % 1000));
+            Echo(_f(timUpdateText, totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
+            if (lastVersion > 0 && lastVersion < VERSION)
+                Echo(_f(FORMAT_TIME_UPDATE_TEXT_VER_CHANGE, lastVersion / 1000000, lastVersion / 1000 % 1000, lastVersion % 1000));
 
             // reset status and debugging data every cycle
             debugText.Clear();
             debugLogic.Clear();
             step = numberTransfers = numberRefineres = numberAssemblers = 0;
 
-            // parse arguments
-            toggle = true;
-            argRewriteTags = REWRITE_TAGS;
-            argTagOpen = TAG_OPEN;
-            argTagClose = TAG_CLOSE;
-            argTagPrefix = TAG_PREFIX;
-            argCycle = CYCLE_LENGTH;
-            argScanCollectors = SCAN_COLLECTORS;
-            argScanDrills = SCAN_DRILLS;
-            argScanGrinders = SCAN_GRINDERS;
-            argScanWelders = SCAN_WELDERS;
-            argQuotaStable = QUOTA_STABLE;
-            foreach (string arg in Me.CustomData.Split(SPACE, REE))
-            {
-                if (arg.Equals("rewrite", OIC))
-                {
-                    argRewriteTags = true;
-                    debugText.Add("Tag rewriting enabled");
-                }
-                else if (arg.Equals("norewrite", OIC))
-                {
-                    argRewriteTags = false;
-                    debugText.Add("Tag rewriting disabled");
-                }
-                else if (arg.StartsWith("tags=", OIC))
-                {
-                    msg = arg.Substring(5);
-                    if (msg.Length != 2)
-                    {
-                        Echo("Invalid 'tags=' delimiters \"" + msg + "\": must be exactly two characters");
-                        toggle = false;
-                    }
-                    else if (msg[0] == ' ' || msg[1] == ' ')
-                    {
-                        Echo("Invalid 'tags=' delimiters \"" + msg + "\": cannot be spaces");
-                        toggle = false;
-                    }
-                    else if (char.ToUpper(msg[0]) == char.ToUpper(msg[1]))
-                    {
-                        Echo("Invalid 'tags=' delimiters \"" + msg + "\": characters must be different");
-                        toggle = false;
-                    }
-                    else
-                    {
-                        argTagOpen = char.ToUpper(msg[0]);
-                        argTagClose = char.ToUpper(msg[1]);
-                        debugText.Add("Tags are delimited by \"" + argTagOpen + "\" and \"" + argTagClose + "\"");
-                    }
-                }
-                else if (arg.StartsWith("prefix=", OIC))
-                {
-                    argTagPrefix = arg.Substring(7).Trim().ToUpper();
-                    if (argTagPrefix == "")
-                    {
-                        debugText.Add("Tag prefix disabled");
-                    }
-                    else
-                    {
-                        debugText.Add("Tag prefix is \"" + argTagPrefix + "\"");
-                    }
-                }
-                else if (arg.StartsWith("cycle=", OIC))
-                {
-                    if (int.TryParse(arg.Substring(6), out argCycle) == false || argCycle < 1)
-                    {
-                        Echo("Invalid 'cycle=' length \"" + arg.Substring(6) + "\": must be a positive integer");
-                        toggle = false;
-                    }
-                    else
-                    {
-                        argCycle = Math.Min(Math.Max(argCycle, 1), MAX_CYCLE_STEPS);
-                        if (argCycle < 2)
-                        {
-                            debugText.Add("Function cycling disabled");
-                        }
-                        else
-                        {
-                            debugText.Add("Cycle length is " + argCycle);
-                        }
-                    }
-                }
-                else if (arg.StartsWith("scan=", OIC))
-                {
-                    msg = arg.Substring(5);
-                    if (msg.Equals("collectors", OIC))
-                    {
-                        argScanCollectors = true;
-                        debugText.Add("Enabled scanning of Collectors");
-                    }
-                    else if (msg.Equals("drills", OIC))
-                    {
-                        argScanDrills = true;
-                        debugText.Add("Enabled scanning of Drills");
-                    }
-                    else if (msg.Equals("grinders", OIC))
-                    {
-                        argScanGrinders = true;
-                        debugText.Add("Enabled scanning of Grinders");
-                    }
-                    else if (msg.Equals("welders", OIC))
-                    {
-                        argScanWelders = true;
-                        debugText.Add("Enabled scanning of Welders");
-                    }
-                    else
-                    {
-                        Echo("Invalid 'scan=' block type '" + msg + "': must be 'collectors', 'drills', 'grinders' or 'welders'");
-                        toggle = false;
-                    }
-                }
-                else if (arg.StartsWith("quota=", OIC))
-                {
-                    msg = arg.Substring(6);
-                    if (msg.Equals("literal", OIC))
-                    {
-                        argQuotaStable = false;
-                        debugText.Add("Disabled stable dynamic quotas");
-                    }
-                    else if (msg.Equals("stable", OIC))
-                    {
-                        argQuotaStable = true;
-                        debugText.Add("Enabled stable dynamic quotas");
-                    }
-                    else
-                    {
-                        Echo("Invalid 'quota=' mode '" + msg + "': must be 'literal' or 'stable'");
-                        toggle = false;
-                    }
-                }
-                else if (arg.StartsWith("debug=", OIC))
-                {
-                    msg = arg.Substring(6);
-                    if (msg.Length >= 1 & "quotas".StartsWith(msg, OIC))
-                    {
-                        debugLogic.Add("quotas");
-                    }
-                    else if (msg.Length >= 1 & "sorting".StartsWith(msg, OIC))
-                    {
-                        debugLogic.Add("sorting");
-                    }
-                    else if (msg.Length >= 1 & "refineries".StartsWith(msg, OIC))
-                    {
-                        debugLogic.Add("refineries");
-                    }
-                    else if (msg.Length >= 1 & "assemblers".StartsWith(msg, OIC))
-                    {
-                        debugLogic.Add("assemblers");
-                    }
-                    else
-                    {
-                        Echo("Invalid 'debug=' type '" + msg + "': must be 'quotas', 'sorting', 'refineries', or 'assemblers'");
-                        toggle = false;
-                    }
-                }
-                else if (arg.StartsWith("TIM_version", OIC)) { }
-                else
-                {
-                    Echo("Unrecognized argument: " + arg);
-                    toggle = false;
-                }
-            }
-            if (toggle == false)
-                return;
-
-            // apply changed arguments
-            toggle = (tagOpen != argTagOpen) | (tagClose != argTagClose) | (tagPrefix != argTagPrefix);
-            if ((toggle | (rewriteTags != argRewriteTags) | (cycleLength != argCycle)) && (cycleStep > 0))
-            {
-                cycleStep = 0;
-                Echo(msg = "Options changed; cycle step reset.");
-                debugText.Add(msg);
-            }
-            rewriteTags = argRewriteTags;
-            tagOpen = argTagOpen;
-            tagClose = argTagClose;
-            tagPrefix = argTagPrefix;
-            cycleLength = argCycle;
-            if (tagRegex == null | toggle)
-            {
-                msg = "\\" + tagOpen;
-                if (tagPrefix != "")
-                {
-                    msg += " *" + System.Text.RegularExpressions.Regex.Escape(tagPrefix) + "(|[ ,]+[^\\" + tagClose + "]*)";
-                }
-                else
-                {
-                    msg += "([^\\" + tagClose + "]*)";
-                }
-                msg += "\\" + tagClose;
-                tagRegex = new System.Text.RegularExpressions.Regex(msg, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            }
+            // ProcessArgs
 
             // scan connectors before PGs! if another TIM is on a grid that is *not* correctly docked, both still need to run
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -722,7 +699,7 @@ PhysicalGunObject/
             GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
             i = blocks.IndexOf(Me);
             j = blocks.FindIndex(block => block.IsFunctional & block.IsWorking);
-            msg = tagOpen + tagPrefix + ((blocks.Count > 1) ? (" #" + (i + 1)) : "") + tagClose;
+            msg = Program.argTagOpen + Program.argTagPrefix + ((blocks.Count > 1) ? (" #" + (i + 1)) : "") + Program.argTagClose;
             Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, msg, 1) : (Me.CustomName + " " + msg);
             if (i != j)
             {
@@ -738,7 +715,7 @@ PhysicalGunObject/
                 Echo(""+blocks[0].GetInventory(0).Owner);
 /**/
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -798,7 +775,7 @@ PhysicalGunObject/
                 }
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -830,7 +807,7 @@ PhysicalGunObject/
                 ParseBlockTags();
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -840,7 +817,7 @@ PhysicalGunObject/
                 AdjustAmounts();
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -850,7 +827,7 @@ PhysicalGunObject/
                 ProcessQuotaPanels(argQuotaStable);
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS) //// todo - high priority: optimise
             {
                 if (cycleLength > 1)
                 {
@@ -860,7 +837,7 @@ PhysicalGunObject/
                 AllocateItems(true); // limited requests
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -870,7 +847,7 @@ PhysicalGunObject/
                 ManageRefineries();
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -880,7 +857,7 @@ PhysicalGunObject/
                 AllocateItems(false); // unlimited requests
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -890,7 +867,7 @@ PhysicalGunObject/
                 ManageAssemblers();
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -900,7 +877,7 @@ PhysicalGunObject/
                 ScanProduction();
             }
 
-            if (cycleStep == step++ * cycleLength / MAX_CYCLE_STEPS)
+            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
             {
                 if (cycleLength > 1)
                 {
@@ -917,13 +894,13 @@ PhysicalGunObject/
                 debugText.Add("ERROR: step" + step + " of " + MAX_CYCLE_STEPS);
 
             // update script status and debug panels on every cycle step
-            cycleStep++;
+            processStep++;
             time = (int)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5);
             load = (int)(100.0f * Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount + 0.5);
             i = 0;
             statsLog[totalCallCount % statsLog.Length] = (
                 ScreenFormatter.Format("" + totalCallCount, 80, out i, 1) +
-                ScreenFormatter.Format(cycleStep + " / " + cycleLength, 125 + i, out i, 1, true) +
+                ScreenFormatter.Format(processStep + " / " + cycleLength, 125 + i, out i, 1, true) +
                 ScreenFormatter.Format(time + " ms", 145 + i, out i, 1) +
                 ScreenFormatter.Format(load + "%", 105 + i, out i, 1, true) +
                 ScreenFormatter.Format("" + numberTransfers, 65 + i, out i, 1, true) +
@@ -931,11 +908,11 @@ PhysicalGunObject/
                 ScreenFormatter.Format("" + numberAssemblers, 65 + i, out i, 1, true) +
                 "\n"
             );
-            Echo(msg = ((cycleLength > 1) ? ("Cycle " + cycleStep + " of " + cycleLength + " completed in ") : "Completed in ") + time + " ms, " + load + "% load (" + Runtime.CurrentInstructionCount + " instructions)");
+            Echo(msg = ((cycleLength > 1) ? ("Cycle " + processStep + " of " + cycleLength + " completed in ") : "Completed in ") + time + " ms, " + load + "% load (" + Runtime.CurrentInstructionCount + " instructions)");
             debugText.Add(msg);
             UpdateStatusPanels();
-            if (cycleStep >= cycleLength)
-                cycleStep = 0;
+            if (processStep >= cycleLength)
+                processStep = 0;
 
             // if we can spare the cycles, render the filler
             if (panelFiller == "" & totalCallCount > cycleLength)
@@ -982,6 +959,153 @@ PhysicalGunObject/
                 }
             }
         }
+
+        #endregion
+
+        #region Runtime
+
+        #region Arguments
+
+        bool ProcessScriptArgs()
+        {
+            bool updateTagRegex = true;
+
+            // init all args back to default
+            argRewriteTags = DEFAULT_ARG_REWRITE_TAGS;
+            argTagOpen = DEFAULT_ARG_TAG_OPEN;
+            argTagClose = DEFAULT_ARG_TAG_CLOSE;
+            argTagPrefix = DEFAULT_ARG_TAG_PREFIX;
+            argScanCollectors = DEFAULT_ARG_SCAN_COLLECTORS;
+            argScanDrills = DEFAULT_ARG_SCAN_DRILLS;
+            argScanGrinders = DEFAULT_ARG_SCAN_GRINDERS;
+            argScanWelders = DEFAULT_ARG_SCAN_WELDERS;
+            argQuotaStable = DEFAULT_ARG_QUOTA_STABLE;
+
+            string arg, value;
+            bool hasValue;
+            foreach (System.Text.RegularExpressions.Match match in argParseRegex.Matches(Me.CustomData))
+            {
+                arg = match.Groups[1].Value.ToLower();
+                hasValue = match.Groups[2].Success;
+                if (hasValue)
+                    value = match.Groups[2].Value.Trim();
+                else
+                    value = "";
+                switch (arg)
+                {
+                    case "rewrite":
+                        if (hasValue)
+                        {
+                            Echo("Argument 'rewrite' does not have a value");
+                            return false;
+                        }
+                        argRewriteTags = true;
+                        debugText.Add("Tag rewriting enabled");
+                        break;
+                    case "norewrite":
+                        if (hasValue)
+                        {
+                            Echo("Argument 'norewrite' does not have a value");
+                            return false;
+                        }
+                        argRewriteTags = false;
+                        debugText.Add("Tag rewriting disabled");
+                        break;
+                    case "tags":
+                        if (value.Length != 2)
+                        {
+                            Echo(_f("Invalid 'tags=' delimiters '{0}': must be exactly two characters", value));
+                            return false;
+                        }
+                        else if (char.ToUpper(value[0]) == char.ToUpper(value[1]))
+                        {
+                            Echo(_f("Invalid 'tags=' delimiters '{0}': characters must be different", value));
+                            return false;
+                        }
+                        else
+                        {
+                            argTagOpen = char.ToUpper(value[0]);
+                            argTagClose = char.ToUpper(value[1]);
+                            debugText.Add(_f("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
+                        }
+                        break;
+                    case "prefix":
+                        argTagPrefix = value.ToUpper();
+                        if (argTagPrefix == "")
+                            debugText.Add("Tag prefix disabled");
+                        else
+                            debugText.Add(_f("Tag prefix is '{0}'", argTagPrefix));
+                        break;
+                    case "scan":
+                        switch (value.ToLower())
+                        {
+                            case "collectors":
+                                argScanCollectors = true;
+                                debugText.Add("Enabled scanning of Collectors");
+                                break;
+                            case "drills":
+                                argScanDrills = true;
+                                debugText.Add("Enabled scanning of Drills");
+                                break;
+                            case "grinders":
+                                argScanGrinders = true;
+                                debugText.Add("Enabled scanning of Grinders");
+                                break;
+                            case "welders":
+                                argScanWelders = true;
+                                debugText.Add("Enabled scanning of Welders");
+                                break;
+                            default:
+                                Echo(_f("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
+                                return false;
+                        }
+                        break;
+                    case "quota":
+                        switch (value.ToLower())
+                        {
+                            case "literal":
+                                argQuotaStable = false;
+                                debugText.Add("Disabled stable dynamic quotas");
+                                break;
+                            case "stable":
+                                argQuotaStable = true;
+                                debugText.Add("Enabled stable dynamic quotas");
+                                break;
+                            default:
+                                Echo(_f("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
+                                return false;
+                        }
+                        break;
+                    case "debug":
+                        value = value.ToLower();
+                        if (argValidDebugValues.Contains(value))
+                            debugLogic.Add(value);
+                        else
+                        {
+                            Echo(_f("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
+                                    value));
+                            return false;
+                        }
+                        break;
+                    case "TIM_version":
+                        break;
+                    default:
+                        // if an argument is not recognised, abort
+                        Echo(_f("Unrecognized argument: '{0}'", arg));
+                        return false;
+                }
+            }
+
+            if (tagRegex == null || updateTagRegex)
+                tagRegex = new System.Text.RegularExpressions.Regex(_f(
+                    argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
+                    argTagOpen, argTagClose, argTagPrefix), // format in args
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+            return true;
+        }
+
+        #endregion
 
         #endregion
 
@@ -1580,9 +1704,9 @@ PhysicalGunObject/
                 if (!(grouped = blockGtag.ContainsKey(block)))
                 {
                     name.Append(block.CustomName, 0, match.Index);
-                    name.Append(tagOpen);
-                    if (tagPrefix != "")
-                        name.Append(tagPrefix + " ");
+                    name.Append(argTagOpen);
+                    if (argTagPrefix != "")
+                        name.Append(argTagPrefix + " ");
                 }
 
                 // loop over all tag attributes
@@ -1805,7 +1929,7 @@ PhysicalGunObject/
                             {
                                 AddInvenRequest(block, 0, itype, isub, priority, amount);
                             }
-                            if (rewriteTags & !grouped)
+                            if (argRewriteTags & !grouped)
                             {
                                 if (force)
                                 {
@@ -1835,11 +1959,11 @@ PhysicalGunObject/
                     }
                 }
 
-                if (rewriteTags & !grouped)
+                if (argRewriteTags & !grouped)
                 {
                     if (name[name.Length - 1] == ' ')
                         name.Length--;
-                    name.Append(tagClose).Append(block.CustomName, match.Index + match.Length, block.CustomName.Length - match.Index - match.Length);
+                    name.Append(argTagClose).Append(block.CustomName, match.Index + match.Length, block.CustomName.Length - match.Index - match.Length);
                     block.CustomName = name.ToString();
                 }
 
