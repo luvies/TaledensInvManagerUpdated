@@ -193,11 +193,11 @@ PhysicalGunObject/
         #region Version
 
         // current script version
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 6, VERSION_REVISION = 5;
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 0;
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-01-1X";
+        const string VERSION_UPDATE = "2018-01-XX - Beta";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
@@ -696,6 +696,7 @@ PhysicalGunObject/
             {
                 do
                 {
+                    debugText.Add(_f("Doing step {0}", processStep));
                     processSteps[processStep]();
                     // TODO: execution limit checks
                 } while (++processStep < processSteps.Length);
@@ -892,6 +893,7 @@ PhysicalGunObject/
                             throw new ArgumentException(_f("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
                                     value));
                         break;
+                    case "":
                     case "TIM_version":
                         break;
                     default:
@@ -903,7 +905,9 @@ PhysicalGunObject/
             if (tagRegex == null || updateTagRegex)
                 tagRegex = new System.Text.RegularExpressions.Regex(_f(
                     argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
-                    argTagOpen, argTagClose, argTagPrefix), // format in args
+                    System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
+                    System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
+                    System.Text.RegularExpressions.Regex.Escape(argTagPrefix)), // format in args
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
         }
 
@@ -923,7 +927,11 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepProcessArgs()
         {
-
+            if (Me.CustomData != completeArguments)
+            {
+                ProcessScriptArgs();
+                completeArguments = Me.CustomData;
+            }
         }
 
         /// <summary>
@@ -942,15 +950,15 @@ PhysicalGunObject/
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
-
+            
             // check to see if this block is the first available TIM
             int selfIndex = blocks.IndexOf(Me); // current index in search
             int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
-
+            
             // update custom name based on current index
             string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + argTagClose;
             Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : (Me.CustomName + " " + updatedCustomName);
-
+            
             // if there are other programmable blocks of higher index, then they will execute and we won't
             if (selfIndex != firstAvailableIndex)
             {
