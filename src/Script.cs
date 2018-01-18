@@ -376,6 +376,10 @@ PhysicalGunObject/
         /// </summary>
         string[] statsLog = new string[12];
         /// <summary>
+        /// The time we started the last cycle at.
+        /// </summary>
+        DateTime currentCycleStartTime;
+        /// <summary>
         /// The total number of calls this script has had since compilation.
         /// </summary>
         long totalCallCount = 0;
@@ -459,6 +463,27 @@ PhysicalGunObject/
         Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>> blockErrors = new Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>>();
 
         #endregion
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// The length of time we have been executing for.
+        /// Measured in milliseconds.
+        /// </summary>
+        int ExecutionTime
+        {
+            get { return (int)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5); }
+        }
+
+        /// <summary>
+        /// The current percent load of the call.
+        /// </summary>
+        double ExecutionLoad
+        {
+            get { return Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount; }
+        }
 
         #endregion
 
@@ -685,50 +710,62 @@ PhysicalGunObject/
 
         public void Main(string argument)
         {
-            // throttle interval
-            if (totalCallCount > 0 & (sinceLastCall += Runtime.TimeSinceLastRun.TotalSeconds) < 0.5)
-                return;
-            sinceLastCall = 0.0;
-
-            DateTime currentCycleStartTime = DateTime.Now;
-            int i, j, step, time, load;
-            string msg;
-            StringBuilder sb = new StringBuilder();
-            List<IMyTerminalBlock> blocks;
+            // init call
+            currentCycleStartTime = DateTime.Now;
 
             // output terminal info
-            totalCallCount++;
-            Echo(_f(timUpdateText, totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
+            Echo(_f(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status and debugging data every cycle
             debugText.Clear();
             debugLogic.Clear();
-            step = numberTransfers = numberRefineres = numberAssemblers = 0;
+            numberTransfers = numberRefineres = numberAssemblers = 0;
 
-            // ===================== TODO: process step management =====================
+            try
+            {
+                do
+                {
+                    processSteps[processStep]();
+                    // TODO: execution limit checks
+                } while (++processStep < processSteps.Length);
+                // if we get here it means we completed all the process steps
+                processStep = 0;
+            }
+            catch (ArgumentException ex)
+            {
+                Echo(ex.Message);
+                processStep = 0;
+                return;
+            }
+            catch (IgnoreExecutionException)
+            {
+                processStep = 0;
+                return;
+            }
+            catch (PutOffExecutionException)
+            { }
 
             // update script status and debug panels on every cycle step
-            processStep++;
-            time = (int)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5);
-            load = (int)(100.0f * Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount + 0.5);
-            i = 0;
+            string msg;
+            int exTime = ExecutionTime;
+            int exLoad = (int)(100.0f * ExecutionLoad);
+            int unused = 0;
             statsLog[totalCallCount % statsLog.Length] = (
-                ScreenFormatter.Format("" + totalCallCount, 80, out i, 1) +
-                ScreenFormatter.Format(processStep + " / " + cycleLength, 125 + i, out i, 1, true) +
-                ScreenFormatter.Format(time + " ms", 145 + i, out i, 1) +
-                ScreenFormatter.Format(load + "%", 105 + i, out i, 1, true) +
-                ScreenFormatter.Format("" + numberTransfers, 65 + i, out i, 1, true) +
-                ScreenFormatter.Format("" + numberRefineres, 65 + i, out i, 1, true) +
-                ScreenFormatter.Format("" + numberAssemblers, 65 + i, out i, 1, true) +
+                ScreenFormatter.Format("" + totalCallCount, 80, out unused, 1) +
+                ScreenFormatter.Format((processStep == 0 ? processSteps.Length : processStep) + " / " + processSteps.Length, 125 + unused, out unused, 1, true) +
+                ScreenFormatter.Format(exTime + " ms", 145 + unused, out unused, 1) +
+                ScreenFormatter.Format(exLoad + "%", 105 + unused, out unused, 1, true) +
+                ScreenFormatter.Format("" + numberTransfers, 65 + unused, out unused, 1, true) +
+                ScreenFormatter.Format("" + numberRefineres, 65 + unused, out unused, 1, true) +
+                ScreenFormatter.Format("" + numberAssemblers, 65 + unused, out unused, 1, true) +
                 "\n"
             );
-            Echo(msg = ((cycleLength > 1) ? ("Cycle " + processStep + " of " + cycleLength + " completed in ") : "Completed in ") + time + " ms, " + load + "% load (" + Runtime.CurrentInstructionCount + " instructions)");
+            Echo(msg = _f("{0} step{1} completed in {2}ms, {3}% load ({4} instructions)",
+                processStep == 0 ? "All" : processStep.ToString(),
+                processStep == 1 ? "" : "s",
+                exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
             UpdateStatusPanels();
-
-            // if we can spare the cycles, render the filler
-            if (panelFiller == "" & totalCallCount > cycleLength)
-                panelFiller = "This easter egg will return when Keen raises the 100kb script code size limit!\n";
         }
 
         #endregion
@@ -915,7 +952,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         void ProcessStepProcessArgs()
         {
-            
+
         }
 
         /// <summary>
