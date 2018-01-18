@@ -652,7 +652,7 @@ PhysicalGunObject/
                 "Taleden's Inventory Manager\n" +
                 VERSION_NICE_TEXT + "\n\n" +
                 ScreenFormatter.Format("Run", 80, out unused, 1) +
-                ScreenFormatter.Format("Step", 125 + unused, out unused, 1) +
+                ScreenFormatter.Format("F-Step", 125 + unused, out unused, 1) +
                 ScreenFormatter.Format("Time", 145 + unused, out unused, 1) +
                 ScreenFormatter.Format("Load", 105 + unused, out unused, 1) +
                 ScreenFormatter.Format("S", 65 + unused, out unused, 1) +
@@ -670,7 +670,7 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
             // echo compilation statement
             Echo("Compiled TIM " + VERSION_NICE_TEXT);
@@ -683,6 +683,7 @@ PhysicalGunObject/
         {
             // init call
             currentCycleStartTime = DateTime.Now;
+            int processStepTmp = processStep;
 
             // output terminal info
             Echo(_f(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
@@ -698,7 +699,7 @@ PhysicalGunObject/
                 {
                     debugText.Add(_f("Doing step {0}", processStep));
                     processSteps[processStep]();
-                    // TODO: execution limit checks
+                    DoExecutionLimitCheck();
                 } while (++processStep < processSteps.Length);
                 // if we get here it means we completed all the process steps
                 processStep = 0;
@@ -732,9 +733,10 @@ PhysicalGunObject/
                 ScreenFormatter.Format("" + numberAssemblers, 65 + unused, out unused, 1, true) +
                 "\n"
             );
+            processStepTmp = (processStep == 0 ? processSteps.Length : processStep) - processStepTmp;
             Echo(msg = _f("{0} step{1} completed in {2}ms, {3}% load ({4} instructions)",
-                processStep == 0 ? "All" : processStep.ToString(),
-                processStep == 1 ? "" : "s",
+                processStepTmp == processSteps.Length ? "All" : processStepTmp.ToString(),
+                processStepTmp == 1 ? "" : "s",
                 exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
             UpdateStatusPanels();
@@ -1157,6 +1159,16 @@ PhysicalGunObject/
         #endregion
 
         #region Util
+
+        /// <summary>
+        /// Checks if the current call has exceeded the maximum execution limit.
+        /// If it has, then it will raise a <see cref="PutOffExecutionException:T"/>.
+        /// </summary>
+        void DoExecutionLimitCheck()
+        {
+            if (ExecutionTime > MAX_RUN_TIME || ExecutionLoad > MAX_LOAD)
+                throw new PutOffExecutionException();
+        }
 
         void AddBlockRestriction(string btype, string bsub, string itype, string isub, bool init = false)
         {
