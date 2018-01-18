@@ -653,8 +653,6 @@ PhysicalGunObject/
 
             // format terminal info text
             timUpdateText = _f(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
-            if (lastVersion > 0 & lastVersion < VERSION)
-                timUpdateText += _f(FORMAT_TIME_UPDATE_TEXT_VER_CHANGE, lastVersion / 1000000, lastVersion / 1000 % 1000, lastVersion % 1000);
         }
 
         public void Main(string argument)
