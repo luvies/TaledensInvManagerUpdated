@@ -409,7 +409,7 @@ PhysicalGunObject/
         /// <summary>
         /// All of the process steps that TIM will need to take,
         /// </summary>
-        readonly Func<bool>[] processSteps;
+        readonly Action[] processSteps;
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
@@ -468,11 +468,20 @@ PhysicalGunObject/
         /// Thrown when the script should abort all execution.
         /// If caught, then <c>processStep</c> should be reset to 0.
         /// </summary>
-        public class IgnoreExecutionException : Exception
+        class IgnoreExecutionException : Exception
         {
-            public IgnoreExecutionException() { }
-            public IgnoreExecutionException(string message) : base(message) { }
-            public IgnoreExecutionException(string message, Exception inner) : base(message, inner) { }
+            internal IgnoreExecutionException() { }
+            internal IgnoreExecutionException(string message) : base(message) { }
+        }
+
+        /// <summary>
+        /// Thrown when we detect that we have taken up too much processing time
+        /// and need to put off the rest of the exection until the next call.
+        /// </summary>
+        class PutOffExecutionException : Exception
+        {
+            internal PutOffExecutionException() { }
+            internal PutOffExecutionException(string message) : base(message) { }
         }
 
         #endregion
@@ -623,7 +632,7 @@ PhysicalGunObject/
         public Program()
         {
             // initialise the process steps we will need to do
-            processSteps = new Func<bool>[]
+            processSteps = new Action[]
             {
                 ProcessStepProcessArgs, // always process arguments first to handle changes
                 ProcessStepScanGrids, // scan grids next to find out if there is another TIM in the terminal system
@@ -894,35 +903,33 @@ PhysicalGunObject/
 
         #region Process Steps
 
-        // each process step will return a bool value indicating whether it completed or not
-        // it the step completed, then we move on
-        // if it didn't, then it means that it was checking on execution limits and exited
-        //     early to make sure it didn't go over, and so it will need to be continued
-        //     on the next cycle
+        // This is where all the steps we need to complete are.
+        // At the end of each step, a check will be done to decide
+        // whether we should continue the processing or wait till the next
+        // call. However, if any step raises a PutOffExecutionException,
+        // then we will wait until the next call to complete that step.
 
         /// <summary>
         /// Processes the block arguments.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepProcessArgs()
+        void ProcessStepProcessArgs()
         {
-
-            return true;
+            
         }
 
         /// <summary>
         /// Scans all the grids and initialises the connections
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepScanGrids()
+        void ProcessStepScanGrids()
         {
             //Echo(msg = "Scanning grid connectors ...");
             debugText.Add("Scanning grid connectors ...");
             ScanGrids();
-            return true;
         }
 
-        bool ProcessStepStandbyCheck()
+        void ProcessStepStandbyCheck()
         {
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
@@ -933,7 +940,7 @@ PhysicalGunObject/
             int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
 
             // update custom name based on current index
-            string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + Program.argTagClose;
+            string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + argTagClose;
             Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : (Me.CustomName + " " + updatedCustomName);
 
             // if there are other programmable blocks of higher index, then they will execute and we won't
@@ -944,14 +951,13 @@ PhysicalGunObject/
                     Echo("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
                 throw new IgnoreExecutionException();
             }
-            return true;
         }
 
         /// <summary>
         /// Scans all inventories to build what blocks need to be processed.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepInventoryScan()
+        void ProcessStepInventoryScan()
         {
             //Echo(msg = "Scanning inventories ...");
             debugText.Add("Scanning inventories ...");
@@ -1006,15 +1012,13 @@ PhysicalGunObject/
                 foreach (string isub in subs)
                     subTypes[isub].Sort();
             }
-
-            return true;
         }
 
         /// <summary>
         /// Parses all found block tags.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepParseTags()
+        void ProcessStepParseTags()
         {
             //Echo(msg = "Scanning tags ...");
             debugText.Add("Scanning tags ...");
@@ -1041,105 +1045,95 @@ PhysicalGunObject/
 
             // parse tags
             ParseBlockTags();
-
-            return true;
         }
 
         /// <summary>
         /// Adjusts the tracked amounts of items in inventories.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepAmountAdjustment()
+        void ProcessStepAmountAdjustment()
         {
             //Echo(msg = "Adjusting tallies ...");
             debugText.Add("Adjusting tallies ...");
             AdjustAmounts();
-            return true;
         }
 
         /// <summary>
         /// Processes quota panels.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepQuotaPanels()
+        void ProcessStepQuotaPanels()
         {
             //Echo(msg = "Scanning quota panels ...");
             debugText.Add("Scanning quota panels ...");
             ProcessQuotaPanels(argQuotaStable);
-            return true;
         }
 
         /// <summary>
         /// Processes the limited item allocations.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepLimitedItemRequests()
+        void ProcessStepLimitedItemRequests()
         {
             //Echo(msg = "Processing limited item requests ...");
             debugText.Add("Processing limited item requests ...");
             //// todo - high priority: optimise
             AllocateItems(true); // limited requests
-            return true;
         }
 
         /// <summary>
         /// Manages handled refineries.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepManageRefineries()
+        void ProcessStepManageRefineries()
         {
             //Echo(msg = "Managing refineries ...");
             debugText.Add("Managing refineries ...");
             ManageRefineries();
-            return true;
         }
 
         /// <summary>
         /// Scans all production blocks.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepScanProduction()
+        void ProcessStepScanProduction()
         {
             //Echo(msg = "Scanning production ...");
             debugText.Add("Scanning production ...");
             ScanProduction();
-            return true;
         }
 
         /// <summary>
         /// Process unlimited item requests using the remaining items.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepUnlimitedItemRequests()
+        void ProcessStepUnlimitedItemRequests()
         {
             //Echo(msg = "Processing remaining item requests ...");
             debugText.Add("Processing remaining item requests ...");
             AllocateItems(false); // unlimited requests
-            return true;
         }
 
         /// <summary>
         /// Manages handled assemblers.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepManageAssemblers()
+        void ProcessStepManageAssemblers()
         {
             //Echo(msg = "Managing assemblers ...");
             debugText.Add("Managing assemblers ...");
             ManageAssemblers();
-            return true;
         }
 
         /// <summary>
         /// Updates all inventory panels.
         /// </summary>
         /// <returns>Whether the step completed.</returns>
-        bool ProcessStepUpdateInventoryPanels()
+        void ProcessStepUpdateInventoryPanels()
         {
             //Echo(msg = "Updating inventory panels ...");
             debugText.Add("Updating inventory panels ...");
             UpdateInventoryPanels();
-            return true;
         }
 
         #endregion
