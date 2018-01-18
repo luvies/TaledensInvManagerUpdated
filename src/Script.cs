@@ -347,7 +347,7 @@ PhysicalGunObject/
         #endregion
 
         #region Script state & storage
-        
+
         /// <summary>
         /// The header for the statistics panels.
         /// </summary>
@@ -387,6 +387,10 @@ PhysicalGunObject/
         /// The current step in the TIM process cycle.
         /// </summary>
         static int processStep = 0;
+        /// <summary>
+        /// All of the process steps that TIM will need to take,
+        /// </summary>
+        static readonly Func<bool>[] processSteps;
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
@@ -654,18 +658,11 @@ PhysicalGunObject/
             debugLogic.Clear();
             step = numberTransfers = numberRefineres = numberAssemblers = 0;
 
+            // ===================== TODO: process step management =====================
+
             // ProcessArgs
 
-            // scan connectors before PGs! if another TIM is on a grid that is *not* correctly docked, both still need to run
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Scanning grid connectors ...");
-                    debugText.Add(msg);
-                }
-                ScanGrids();
-            }
+            // process step grid scan
 
             // search for other TIMs
             blocks = new List<IMyTerminalBlock>();
@@ -683,185 +680,28 @@ PhysicalGunObject/
             }
 
             // TODO: API testing
-            /**
-                GridTerminalSystem.GetBlocksOfType<IMyShipController>(blocks);
-                Echo(""+blocks[0].GetInventory(0).Owner);
-/**/
+            //GridTerminalSystem.GetBlocksOfType<IMyShipController>(blocks);
+            //Echo(""+blocks[0].GetInventory(0).Owner);
 
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Scanning inventories ...");
-                    debugText.Add(msg);
-                }
+            // process step inventory scan
 
-                // reset everything that we'll check during this step
-                foreach (string itype in types)
-                {
-                    typeAmount[itype] = 0;
-                    foreach (InventoryItemData data in typeSubData[itype].Values)
-                    {
-                        data.amount = 0L;
-                        data.avail = 0L;
-                        data.locked = 0L;
-                        data.invenTotal.Clear();
-                        data.invenSlot.Clear();
-                    }
-                }
-                blockTag.Clear();
-                blockGtag.Clear();
-                invenLocked.Clear();
-                invenHidden.Clear();
+            // process step tag parsing
 
-                // scan inventories
-                ScanGroups();
-                ScanBlocks<IMyAssembler>();
-                ScanBlocks<IMyCargoContainer>();
-                if (argScanCollectors)
-                    ScanBlocks<IMyCollector>();
-                ScanBlocks<IMyGasGenerator>();
-                ScanBlocks<IMyGasTank>();
-                ScanBlocks<IMyReactor>();
-                ScanBlocks<IMyRefinery>();
-                ScanBlocks<IMyShipConnector>();
-                ScanBlocks<IMyShipController>();
-                if (argScanDrills)
-                    ScanBlocks<IMyShipDrill>();
-                if (argScanGrinders)
-                    ScanBlocks<IMyShipGrinder>();
-                if (argScanWelders)
-                    ScanBlocks<IMyShipWelder>();
-                ScanBlocks<IMyTextPanel>();
-                ScanBlocks<IMyUserControllableGun>();
+            // process step amount adjustment
 
-                // if we found any new item type/subtypes, re-sort the lists
-                if (foundNewItem)
-                {
-                    foundNewItem = false;
-                    types.Sort();
-                    foreach (string itype in types)
-                        typeSubs[itype].Sort();
-                    subs.Sort();
-                    foreach (string isub in subs)
-                        subTypes[isub].Sort();
-                }
-            }
+            // process step quota panels
 
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Scanning tags ...");
-                    debugText.Add(msg);
-                }
+            // process step limited item requests
 
-                // reset everything that we'll check during this step
-                foreach (string itype in types)
-                {
-                    foreach (InventoryItemData data in typeSubData[itype].Values)
-                    {
-                        data.qpriority = -1;
-                        data.quota = 0L;
-                        data.producers.Clear();
-                    }
-                }
-                qpanelPriority.Clear();
-                qpanelTypes.Clear();
-                ipanelTypes.Clear();
-                priTypeSubInvenRequest.Clear();
-                statusPanels.Clear();
-                debugPanels.Clear();
-                refineryOres.Clear();
-                assemblerItems.Clear();
-                panelSpan.Clear();
+            // process step refinery management
 
-                // parse tags
-                ParseBlockTags();
-            }
+            // process step unlimited item requests
 
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Adjusting tallies ...");
-                    debugText.Add(msg);
-                }
-                AdjustAmounts();
-            }
+            // process step assembler management
 
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Scanning quota panels ...");
-                    debugText.Add(msg);
-                }
-                ProcessQuotaPanels(argQuotaStable);
-            }
+            // process step scan production
 
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS) //// todo - high priority: optimise
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Processing limited item requests ...");
-                    debugText.Add(msg);
-                }
-                AllocateItems(true); // limited requests
-            }
-
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Managing refineries ...");
-                    debugText.Add(msg);
-                }
-                ManageRefineries();
-            }
-
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Processing remaining item requests ...");
-                    debugText.Add(msg);
-                }
-                AllocateItems(false); // unlimited requests
-            }
-
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Managing assemblers ...");
-                    debugText.Add(msg);
-                }
-                ManageAssemblers();
-            }
-
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Scanning production ...");
-                    debugText.Add(msg);
-                }
-                ScanProduction();
-            }
-
-            if (processStep == step++ * cycleLength / MAX_CYCLE_STEPS)
-            {
-                if (cycleLength > 1)
-                {
-                    Echo(msg = "Updating inventory panels ...");
-                    debugText.Add(msg);
-                }
-                UpdateInventoryPanels();
-            }
-
-            if (step != MAX_CYCLE_STEPS)
-                debugText.Add("ERROR: step" + step + " of " + MAX_CYCLE_STEPS);
+            // process step update inv panels
 
             // update script status and debug panels on every cycle step
             processStep++;
@@ -881,8 +721,6 @@ PhysicalGunObject/
             Echo(msg = ((cycleLength > 1) ? ("Cycle " + processStep + " of " + cycleLength + " completed in ") : "Completed in ") + time + " ms, " + load + "% load (" + Runtime.CurrentInstructionCount + " instructions)");
             debugText.Add(msg);
             UpdateStatusPanels();
-            if (processStep >= cycleLength)
-                processStep = 0;
 
             // if we can spare the cycles, render the filler
             if (panelFiller == "" & totalCallCount > cycleLength)
@@ -1080,6 +918,229 @@ PhysicalGunObject/
         #endregion
 
         #region Process Steps
+
+        // each process step will return a bool value indicating whether it completed or not
+        // it the step completed, then we move on
+        // if it didn't, then it means that it was checking on execution limits and exited
+        //     early to make sure it didn't go over, and so it will need to be continued
+        //     on the next cycle
+
+        /// <summary>
+        /// Processes the block arguments.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepProcessArgs()
+        {
+
+            return true;
+        }
+
+        /// <summary>
+        /// Scans all the grids and initialises the connections
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepScanGrids()
+        {
+            //Echo(msg = "Scanning grid connectors ...");
+            debugText.Add("Scanning grid connectors ...");
+            ScanGrids();
+            return true;
+        }
+
+        /// <summary>
+        /// Scans all inventories to build what blocks need to be processed.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepInventoryScan()
+        {
+            //Echo(msg = "Scanning inventories ...");
+            debugText.Add("Scanning inventories ...");
+
+            // reset everything that we'll check during this step
+            foreach (string itype in types)
+            {
+                typeAmount[itype] = 0;
+                foreach (InventoryItemData data in typeSubData[itype].Values)
+                {
+                    data.amount = 0L;
+                    data.avail = 0L;
+                    data.locked = 0L;
+                    data.invenTotal.Clear();
+                    data.invenSlot.Clear();
+                }
+            }
+            blockTag.Clear();
+            blockGtag.Clear();
+            invenLocked.Clear();
+            invenHidden.Clear();
+
+            // scan inventories
+            ScanGroups();
+            ScanBlocks<IMyAssembler>();
+            ScanBlocks<IMyCargoContainer>();
+            if (argScanCollectors)
+                ScanBlocks<IMyCollector>();
+            ScanBlocks<IMyGasGenerator>();
+            ScanBlocks<IMyGasTank>();
+            ScanBlocks<IMyReactor>();
+            ScanBlocks<IMyRefinery>();
+            ScanBlocks<IMyShipConnector>();
+            ScanBlocks<IMyShipController>();
+            if (argScanDrills)
+                ScanBlocks<IMyShipDrill>();
+            if (argScanGrinders)
+                ScanBlocks<IMyShipGrinder>();
+            if (argScanWelders)
+                ScanBlocks<IMyShipWelder>();
+            ScanBlocks<IMyTextPanel>();
+            ScanBlocks<IMyUserControllableGun>();
+
+            // if we found any new item type/subtypes, re-sort the lists
+            if (foundNewItem)
+            {
+                foundNewItem = false;
+                types.Sort();
+                foreach (string itype in types)
+                    typeSubs[itype].Sort();
+                subs.Sort();
+                foreach (string isub in subs)
+                    subTypes[isub].Sort();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Parses all found block tags.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepParseTags()
+        {
+            //Echo(msg = "Scanning tags ...");
+            debugText.Add("Scanning tags ...");
+
+            // reset everything that we'll check during this step
+            foreach (string itype in types)
+            {
+                foreach (InventoryItemData data in typeSubData[itype].Values)
+                {
+                    data.qpriority = -1;
+                    data.quota = 0L;
+                    data.producers.Clear();
+                }
+            }
+            qpanelPriority.Clear();
+            qpanelTypes.Clear();
+            ipanelTypes.Clear();
+            priTypeSubInvenRequest.Clear();
+            statusPanels.Clear();
+            debugPanels.Clear();
+            refineryOres.Clear();
+            assemblerItems.Clear();
+            panelSpan.Clear();
+
+            // parse tags
+            ParseBlockTags();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Adjusts the tracked amounts of items in inventories.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepAmountAdjustment()
+        {
+            //Echo(msg = "Adjusting tallies ...");
+            debugText.Add("Adjusting tallies ...");
+            AdjustAmounts();
+            return true;
+        }
+
+        /// <summary>
+        /// Processes quota panels.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepQuotaPanels()
+        {
+            //Echo(msg = "Scanning quota panels ...");
+            debugText.Add("Scanning quota panels ...");
+            ProcessQuotaPanels(argQuotaStable);
+            return true;
+        }
+
+        /// <summary>
+        /// Processes the limited item allocations.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepLimitedItemRequests()
+        {
+            //Echo(msg = "Processing limited item requests ...");
+            debugText.Add("Processing limited item requests ...");
+            //// todo - high priority: optimise
+            AllocateItems(true); // limited requests
+            return true;
+        }
+
+        /// <summary>
+        /// Manages handled refineries.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepManageRefineries()
+        {
+            //Echo(msg = "Managing refineries ...");
+            debugText.Add("Managing refineries ...");
+            ManageRefineries();
+            return true;
+        }
+
+        /// <summary>
+        /// Scans all production blocks.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepScanProduction()
+        {
+            //Echo(msg = "Scanning production ...");
+            debugText.Add("Scanning production ...");
+            ScanProduction();
+            return true;
+        }
+
+        /// <summary>
+        /// Process unlimited item requests using the remaining items.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepUnlimitedItemRequests()
+        {
+            //Echo(msg = "Processing remaining item requests ...");
+            debugText.Add("Processing remaining item requests ...");
+            AllocateItems(false); // unlimited requests
+            return true;
+        }
+
+        /// <summary>
+        /// Manages handled assemblers.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepManageAssemblers()
+        {
+            //Echo(msg = "Managing assemblers ...");
+            debugText.Add("Managing assemblers ...");
+            ManageAssemblers();
+            return true;
+        }
+
+        /// <summary>
+        /// Updates all inventory panels.
+        /// </summary>
+        /// <returns>Whether the step completed.</returns>
+        bool ProcessStepUpdateInventoryPanels()
+        {
+            //Echo(msg = "Updating inventory panels ...");
+            debugText.Add("Updating inventory panels ...");
+            UpdateInventoryPanels();
+            return true;
+        }
 
         #endregion
 
@@ -1859,8 +1920,8 @@ PhysicalGunObject/
                                 if (blkRfn.Enabled)
                                     (refineryOres.TryGetValue(blkRfn, out ores) ? ores : (refineryOres[blkRfn] = new HashSet<string>())).UnionWith(autoores);
                             }
-                            else if(blkAsm.Enabled)
-                                    (assemblerItems.TryGetValue(blkAsm, out items) ? items : (assemblerItems[blkAsm] = new HashSet<ItemId>())).UnionWith(autoitems);
+                            else if (blkAsm.Enabled)
+                                (assemblerItems.TryGetValue(blkAsm, out items) ? items : (assemblerItems[blkAsm] = new HashSet<ItemId>())).UnionWith(autoitems);
                             name.Append(" ");
                         }
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
