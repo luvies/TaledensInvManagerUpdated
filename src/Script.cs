@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.6.5 (2018-01-13)
+version 1.7.0 (2018-01-XX)
 
 Unoffical maintained version of TIM.
 
@@ -698,11 +698,12 @@ PhysicalGunObject/
             {
                 do
                 {
-                    debugText.Add(_f("Doing step {0}", processStep));
+                    debugText.Add(_f("> Doing step {0}", processStep));
                     processSteps[processStep]();
+                    processStep++;
                     didAtLeastOneProcess = true;
                     DoExecutionLimitCheck();
-                } while (++processStep < processSteps.Length);
+                } while (processStep < processSteps.Length);
                 // if we get here it means we completed all the process steps
                 processStep = 0;
             }
@@ -743,7 +744,7 @@ PhysicalGunObject/
             else if (theoryProcessStep - processStepTmp == 1)
                 stepText = _f("step {0}", processStepTmp);
             else
-                stepText = _f("steps {0} to {1}", processStepTmp, theoryProcessStep);
+                stepText = _f("steps {0} to {1}", processStepTmp, theoryProcessStep - 1);
             Echo(msg = _f("Completed {0} in {1}ms, {2}% load ({3} instructions)",
                 stepText, exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
