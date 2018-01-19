@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.0 (2018-01-XX)
+version 1.7.0 (2018-01-19)
 
 Unoffical maintained version of TIM.
 
@@ -197,7 +197,7 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-01-XX - Beta";
+        const string VERSION_UPDATE = "2018-01-19";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
@@ -630,19 +630,19 @@ PhysicalGunObject/
             // initialise the process steps we will need to do
             processSteps = new Action[]
             {
-                ProcessStepProcessArgs, // always process arguments first to handle changes
-                ProcessStepScanGrids, // scan grids next to find out if there is another TIM in the terminal system
-                ProcessStepStandbyCheck, // detect if another TIM should run instead and if we should be backup
-                ProcessStepInventoryScan, // do the inventory scanning
-                ProcessStepParseTags, // parse the tags of the blocks we found
-                ProcessStepAmountAdjustment, // adjust item amounts based on what's available
-                ProcessStepQuotaPanels, // handle quota panels
-                ProcessStepLimitedItemRequests, // handle limited item requests
-                ProcessStepManageRefineries, // handle all refineries we need to
-                ProcessStepUnlimitedItemRequests, // handle unlimited item requests
-                ProcessStepManageAssemblers, // handle all assemblers we need to
-                ProcessStepScanProduction, // scan all production blocks and handle them
-                ProcessStepUpdateInventoryPanels, // update all inventory panels
+                ProcessStepProcessArgs,           // 0:  always process arguments first to handle changes
+                ProcessStepScanGrids,             // 1:  scan grids next to find out if there is another TIM in the terminal system
+                ProcessStepStandbyCheck,          // 2:  detect if another TIM should run instead and if we should be backup
+                ProcessStepInventoryScan,         // 3:  do the inventory scanning
+                ProcessStepParseTags,             // 4:  parse the tags of the blocks we found
+                ProcessStepAmountAdjustment,      // 5:  adjust item amounts based on what's available
+                ProcessStepQuotaPanels,           // 6:  handle quota panels
+                ProcessStepLimitedItemRequests,   // 7:  handle limited item requests
+                ProcessStepManageRefineries,      // 8:  handle all refineries we need to
+                ProcessStepUnlimitedItemRequests, // 9:  handle unlimited item requests
+                ProcessStepManageAssemblers,      // 10: handle all assemblers we need to
+                ProcessStepScanProduction,        // 11: scan all production blocks and handle them
+                ProcessStepUpdateInventoryPanels, // 12: update all inventory panels
             };
 
             // initialize panel data
