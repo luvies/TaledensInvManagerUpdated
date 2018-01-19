@@ -904,7 +904,7 @@ PhysicalGunObject/
                                     value));
                         break;
                     case "":
-                    case "TIM_version":
+                    case "tim_version":
                         break;
                     default:
                         // if an argument is not recognised, abort
