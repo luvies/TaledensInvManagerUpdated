@@ -230,7 +230,7 @@ PhysicalGunObject/
         #region Arguments
 
         #region Defaults
-        
+
         const bool DEFAULT_ARG_REWRITE_TAGS = true;
         const bool DEFAULT_ARG_QUOTA_STABLE = true;
         const char DEFAULT_ARG_TAG_OPEN = '[';
@@ -670,7 +670,7 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
 
             // echo compilation statement
             Echo("Compiled TIM " + VERSION_NICE_TEXT);
@@ -684,6 +684,7 @@ PhysicalGunObject/
             // init call
             currentCycleStartTime = DateTime.Now;
             int processStepTmp = processStep;
+            bool didAtLeastOneProcess = false;
 
             // output terminal info
             Echo(_f(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
@@ -699,6 +700,7 @@ PhysicalGunObject/
                 {
                     debugText.Add(_f("Doing step {0}", processStep));
                     processSteps[processStep]();
+                    didAtLeastOneProcess = true;
                     DoExecutionLimitCheck();
                 } while (++processStep < processSteps.Length);
                 // if we get here it means we completed all the process steps
@@ -719,9 +721,10 @@ PhysicalGunObject/
             { }
 
             // update script status and debug panels on every cycle step
-            string msg;
+            string msg, stepText;
+            int theoryProcessStep = processStep == 0 ? 13 : processStep;
             int exTime = ExecutionTime;
-            int exLoad = (int)(100.0f * ExecutionLoad);
+            double exLoad = Math.Round(100.0f * ExecutionLoad, 1);
             int unused = 0;
             statsLog[totalCallCount % statsLog.Length] = (
                 ScreenFormatter.Format("" + totalCallCount, 80, out unused, 1) +
@@ -733,11 +736,16 @@ PhysicalGunObject/
                 ScreenFormatter.Format("" + numberAssemblers, 65 + unused, out unused, 1, true) +
                 "\n"
             );
-            processStepTmp = (processStep == 0 ? processSteps.Length : processStep) - processStepTmp;
-            Echo(msg = _f("{0} step{1} completed in {2}ms, {3}% load ({4} instructions)",
-                processStepTmp == processSteps.Length ? "All" : processStepTmp.ToString(),
-                processStepTmp == 1 ? "" : "s",
-                exTime, exLoad, Runtime.CurrentInstructionCount));
+            if (processStep == 0 && processStepTmp == 0 && didAtLeastOneProcess)
+                stepText = "all steps";
+            else if (processStep == processStepTmp)
+                stepText = _f("step {0} partially", processStep);
+            else if (theoryProcessStep - processStepTmp == 1)
+                stepText = _f("step {0}", processStepTmp);
+            else
+                stepText = _f("steps {0} to {1}", processStepTmp, theoryProcessStep);
+            Echo(msg = _f("Completed {0} in {1}ms, {2}% load ({3} instructions)",
+                stepText, exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
             UpdateStatusPanels();
         }
@@ -952,15 +960,15 @@ PhysicalGunObject/
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
-            
+
             // check to see if this block is the first available TIM
             int selfIndex = blocks.IndexOf(Me); // current index in search
             int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
-            
+
             // update custom name based on current index
             string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + argTagClose;
             Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : (Me.CustomName + " " + updatedCustomName);
-            
+
             // if there are other programmable blocks of higher index, then they will execute and we won't
             if (selfIndex != firstAvailableIndex)
             {
