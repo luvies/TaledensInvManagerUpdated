@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.1 (2018-01-20-Beta)
+version 1.7.1 (2018-01-20)
 
 Unoffical maintained version of TIM.
 
@@ -185,8 +185,6 @@ PhysicalGunObject/
         // =================================================
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
-        delegate string _stringFormat(string format, params object[] args);
-        static readonly _stringFormat _f = string.Format;
         /*m*/
         #region Fields
 
@@ -197,11 +195,11 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-01-20-Beta";
+        const string VERSION_UPDATE = "2018-01-20";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
-        readonly string VERSION_NICE_TEXT = _f("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
+        readonly string VERSION_NICE_TEXT = string.Format("v{0}.{1}.{2} ({3})", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_UPDATE);
 
         #endregion
 
@@ -676,7 +674,7 @@ PhysicalGunObject/
             Echo("Compiled TIM " + VERSION_NICE_TEXT);
 
             // format terminal info text
-            timUpdateText = _f(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
+            timUpdateText = string.Format(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
         }
 
         public void Main(string argument)
@@ -687,7 +685,7 @@ PhysicalGunObject/
             bool didAtLeastOneProcess = false;
 
             // output terminal info
-            Echo(_f(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
+            Echo(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status and debugging data every cycle
             debugText.Clear();
@@ -698,7 +696,7 @@ PhysicalGunObject/
             {
                 do
                 {
-                    debugText.Add(_f("> Doing step {0}", processStep));
+                    debugText.Add(string.Format("> Doing step {0}", processStep));
                     processSteps[processStep]();
                     processStep++;
                     didAtLeastOneProcess = true;
@@ -739,12 +737,12 @@ PhysicalGunObject/
             if (processStep == 0 && processStepTmp == 0 && didAtLeastOneProcess)
                 stepText = "all steps";
             else if (processStep == processStepTmp)
-                stepText = _f("step {0} partially", processStep);
+                stepText = string.Format("step {0} partially", processStep);
             else if (theoryProcessStep - processStepTmp == 1)
-                stepText = _f("step {0}", processStepTmp);
+                stepText = string.Format("step {0}", processStepTmp);
             else
-                stepText = _f("steps {0} to {1}", processStepTmp, theoryProcessStep - 1);
-            Echo(msg = _f("Completed {0} in {1}ms, {2}% load ({3} instructions)",
+                stepText = string.Format("steps {0} to {1}", processStepTmp, theoryProcessStep - 1);
+            Echo(msg = string.Format("Completed {0} in {1}ms, {2}% load ({3} instructions)",
                 stepText, exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
             UpdateStatusPanels();
@@ -838,14 +836,14 @@ PhysicalGunObject/
                         break;
                     case "tags":
                         if (value.Length != 2)
-                            throw new ArgumentException(_f("Invalid 'tags=' delimiters '{0}': must be exactly two characters", value));
+                            throw new ArgumentException(string.Format("Invalid 'tags=' delimiters '{0}': must be exactly two characters", value));
                         else if (char.ToUpper(value[0]) == char.ToUpper(value[1]))
-                            throw new ArgumentException(_f("Invalid 'tags=' delimiters '{0}': characters must be different", value));
+                            throw new ArgumentException(string.Format("Invalid 'tags=' delimiters '{0}': characters must be different", value));
                         else
                         {
                             argTagOpen = char.ToUpper(value[0]);
                             argTagClose = char.ToUpper(value[1]);
-                            debugText.Add(_f("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
+                            debugText.Add(string.Format("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
                         }
                         updateTagRegex = true;
                         break;
@@ -854,7 +852,7 @@ PhysicalGunObject/
                         if (argTagPrefix == "")
                             debugText.Add("Tag prefix disabled");
                         else
-                            debugText.Add(_f("Tag prefix is '{0}'", argTagPrefix));
+                            debugText.Add(string.Format("Tag prefix is '{0}'", argTagPrefix));
                         updateTagRegex = true;
                         break;
                     case "scan":
@@ -877,7 +875,7 @@ PhysicalGunObject/
                                 debugText.Add("Enabled scanning of Welders");
                                 break;
                             default:
-                                throw new ArgumentException(_f("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
+                                throw new ArgumentException(string.Format("Invalid 'scan=' block type '{0}': must be 'collectors', 'drills', 'grinders' or 'welders'", value));
                         }
                         break;
                     case "quota":
@@ -892,7 +890,7 @@ PhysicalGunObject/
                                 debugText.Add("Enabled stable dynamic quotas");
                                 break;
                             default:
-                                throw new ArgumentException(_f("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
+                                throw new ArgumentException(string.Format("Invalid 'quota=' mode '{0}': must be 'literal' or 'stable'", value));
                         }
                         break;
                     case "debug":
@@ -900,7 +898,7 @@ PhysicalGunObject/
                         if (argValidDebugValues.Contains(value))
                             debugLogic.Add(value);
                         else
-                            throw new ArgumentException(_f("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
+                            throw new ArgumentException(string.Format("Invalid 'debug=' type '{0}': must be 'quotas', 'sorting', 'refineries', or 'assemblers'",
                                     value));
                         break;
                     case "":
@@ -908,12 +906,12 @@ PhysicalGunObject/
                         break;
                     default:
                         // if an argument is not recognised, abort
-                        throw new ArgumentException(_f("Unrecognized argument: '{0}'", arg));
+                        throw new ArgumentException(string.Format("Unrecognized argument: '{0}'", arg));
                 }
             }
 
             if (tagRegex == null || updateTagRegex)
-                tagRegex = new System.Text.RegularExpressions.Regex(_f(
+                tagRegex = new System.Text.RegularExpressions.Regex(string.Format(
                     argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
                     System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
                     System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
