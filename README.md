@@ -32,9 +32,10 @@ To generate a PB-compatible file, build the project and use the source generated
 These are all the things that we are planning on doing or have done to the code. This will be added as requests come in or when we think something needs updating.
 
 - [x] Minify main code block
-- [ ] Shuffle code to make file more readable
+- [x] Shuffle code to make file more readable
 - [ ] Add comments to classes and functions to make it clearer
-- [ ] Deprecate the cycle argument for dynamic run-cycles
+- [x] Deprecate the cycle argument for dynamic run-cycles
 - [ ] Update LCD system
     - [ ] Simpify code to reduce execution time
     - [ ] Add Automatic LCDs support for better display
+- [ ] Allow tag reading from Custom Data
