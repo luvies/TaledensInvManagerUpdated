@@ -702,8 +702,7 @@ PhysicalGunObject/
                     processSteps[processStep]();
                     processStep++;
                     didAtLeastOneProcess = true;
-                    DoExecutionLimitCheck();
-                } while (processStep < processSteps.Length);
+                } while (processStep < processSteps.Length && DoExecutionLimitCheck());
                 // if we get here it means we completed all the process steps
                 processStep = 0;
             }
@@ -1173,10 +1172,13 @@ PhysicalGunObject/
         /// Checks if the current call has exceeded the maximum execution limit.
         /// If it has, then it will raise a <see cref="PutOffExecutionException:T"/>.
         /// </summary>
-        void DoExecutionLimitCheck()
+        /// <returns>True.</returns>
+        /// <remarks>This methods returns true by default to allow use in the while check.</remarks>
+        bool DoExecutionLimitCheck()
         {
             if (ExecutionTime > MAX_RUN_TIME || ExecutionLoad > MAX_LOAD)
                 throw new PutOffExecutionException();
+            return true;
         }
 
         void AddBlockRestriction(string btype, string bsub, string itype, string isub, bool init = false)
