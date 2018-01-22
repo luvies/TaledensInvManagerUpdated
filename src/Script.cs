@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.1 (2018-01-20)
+version 1.7.2 (2018-01-XX Beta)
 
 Unoffical maintained version of TIM.
 
@@ -191,11 +191,11 @@ PhysicalGunObject/
         #region Version
 
         // current script version
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 1;
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 2;
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-01-20";
+        const string VERSION_UPDATE = "2018-01-XX Beta";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
@@ -2286,21 +2286,69 @@ PhysicalGunObject/
             }
         }
 
+        // ================ local persisted vars ================
+        List<int> AllocateItems_priorities = null;
+        int AllocateItems_prioritiesIndex;
+        List<string> AllocateItems_inventoryRequestTypes = null;
+        int AllocateItems_inventoryRequestTypesIndex;
+        List<string> AllocateItems_inventoryRequestSubTypes = null;
+        int AllocateItems_inventoryRequestSubTypesIndex;
+        /// <summary>
+        /// Allocates all inventory items.
+        /// </summary>
+        /// <param name="limited">Whether to allocate limited or unlimited items.</param>
         void AllocateItems(bool limited)
         {
-            List<int> priorities;
-
             // establish priority order, adding 0 for refinery management
-            priorities = new List<int>(priTypeSubInvenRequest.Keys);
-            priorities.Sort();
-            foreach (int p in priorities)
+            if (AllocateItems_priorities == null) // if not null, then ignore and continue what we were doing
             {
-                foreach (string itype in priTypeSubInvenRequest[p].Keys)
-                {
-                    foreach (string isub in priTypeSubInvenRequest[p][itype].Keys)
-                        AllocateItemBatch(limited, p, itype, isub);
-                }
+                AllocateItems_priorities = new List<int>(priTypeSubInvenRequest.Keys);
+                AllocateItems_priorities.Sort();
+                AllocateItems_prioritiesIndex = 0;
             }
+            // indexes and lists are stored in a way that enables persisting between calls
+            // this enables us to continue where we left of if we need to
+            for (; AllocateItems_prioritiesIndex < AllocateItems_priorities.Count; AllocateItems_prioritiesIndex++)
+            {
+                if (AllocateItems_inventoryRequestTypes == null) // if not null, then ignore and continue what we were doing
+                {
+                    AllocateItems_inventoryRequestTypes = new List<string>(priTypeSubInvenRequest
+                        [AllocateItems_priorities[AllocateItems_prioritiesIndex]].Keys);
+                    AllocateItems_inventoryRequestTypesIndex = 0;
+                }
+                for (; AllocateItems_inventoryRequestTypesIndex < AllocateItems_inventoryRequestTypes.Count; AllocateItems_inventoryRequestTypesIndex++)
+                {
+                    if (AllocateItems_inventoryRequestSubTypes == null) // if not null, then ignore and continue what we were doing
+                    {
+                        AllocateItems_inventoryRequestSubTypes = new List<string>(priTypeSubInvenRequest
+                            [AllocateItems_priorities[AllocateItems_prioritiesIndex]]
+                                [AllocateItems_inventoryRequestTypes[AllocateItems_inventoryRequestTypesIndex]].Keys);
+                        AllocateItems_inventoryRequestSubTypesIndex = 0;
+                    }
+                    bool doneAtLeast1Allocation = false;
+                    for (; AllocateItems_inventoryRequestSubTypesIndex < AllocateItems_inventoryRequestSubTypes.Count; AllocateItems_inventoryRequestSubTypesIndex++)
+                    {
+                        // we check the exectution limit to ensure that we haven't gone over.
+                        // if we do, then the variables for the loops should persist
+                        // and since they are not set to null, we should restart the loops exactly where we stopped.
+                        // this is done now to allow the index vars to increment on each iteration first (in order to not do the same
+                        // thing twice).
+                        if (doneAtLeast1Allocation) // only check if at least 1 allocation was completed (stops infinite loops occuring)
+                            DoExecutionLimitCheck();
+                        AllocateItemBatch(limited, // limited var
+                            AllocateItems_priorities[AllocateItems_prioritiesIndex], // current priority
+                            AllocateItems_inventoryRequestTypes[AllocateItems_inventoryRequestTypesIndex], // current type
+                            AllocateItems_inventoryRequestSubTypes[AllocateItems_inventoryRequestSubTypesIndex]); // current subtype
+                        doneAtLeast1Allocation = true;
+                    }
+                    // clear list so we know that it was completed
+                    AllocateItems_inventoryRequestSubTypes = null;
+                }
+                // clear list so we know that it was completed
+                AllocateItems_inventoryRequestTypes = null;
+            }
+            // clear list so we know that it was completed
+            AllocateItems_priorities = null;
 
             // if we just finished the unlimited requests, check for leftovers
             if (!limited)
@@ -2315,7 +2363,6 @@ PhysicalGunObject/
                 }
             }
         }
-
 
         void AllocateItemBatch(bool limited, int priority, string itype, string isub)
         {
