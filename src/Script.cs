@@ -937,6 +937,7 @@ PhysicalGunObject/
         {
             if (Me.CustomData != completeArguments)
             {
+                debugText.Add("Arguments changed, re-processing...");
                 ProcessScriptArgs();
                 completeArguments = Me.CustomData;
             }
@@ -948,8 +949,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepScanGrids()
         {
-            //Echo(msg = "Scanning grid connectors ...");
-            debugText.Add("Scanning grid connectors ...");
+            debugText.Add("Scanning grid connectors...");
             ScanGrids();
         }
 
@@ -983,8 +983,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepInventoryScan()
         {
-            //Echo(msg = "Scanning inventories ...");
-            debugText.Add("Scanning inventories ...");
+            debugText.Add("Scanning inventories...");
 
             // reset everything that we'll check during this step
             foreach (string itype in types)
@@ -1044,8 +1043,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepParseTags()
         {
-            //Echo(msg = "Scanning tags ...");
-            debugText.Add("Scanning tags ...");
+            debugText.Add("Scanning tags...");
 
             // reset everything that we'll check during this step
             foreach (string itype in types)
@@ -1077,8 +1075,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepAmountAdjustment()
         {
-            //Echo(msg = "Adjusting tallies ...");
-            debugText.Add("Adjusting tallies ...");
+            debugText.Add("Adjusting tallies...");
             AdjustAmounts();
         }
 
@@ -1088,8 +1085,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepQuotaPanels()
         {
-            //Echo(msg = "Scanning quota panels ...");
-            debugText.Add("Scanning quota panels ...");
+            debugText.Add("Scanning quota panels...");
             ProcessQuotaPanels(argQuotaStable);
         }
 
@@ -1099,9 +1095,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepLimitedItemRequests()
         {
-            //Echo(msg = "Processing limited item requests ...");
-            debugText.Add("Processing limited item requests ...");
-            //// todo - high priority: optimise
+            debugText.Add("Processing limited item requests...");
             AllocateItems(true); // limited requests
         }
 
@@ -1111,8 +1105,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepManageRefineries()
         {
-            //Echo(msg = "Managing refineries ...");
-            debugText.Add("Managing refineries ...");
+            debugText.Add("Managing refineries...");
             ManageRefineries();
         }
 
@@ -1122,8 +1115,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepScanProduction()
         {
-            //Echo(msg = "Scanning production ...");
-            debugText.Add("Scanning production ...");
+            debugText.Add("Scanning production...");
             ScanProduction();
         }
 
@@ -1133,8 +1125,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepUnlimitedItemRequests()
         {
-            //Echo(msg = "Processing remaining item requests ...");
-            debugText.Add("Processing remaining item requests ...");
+            debugText.Add("Processing remaining item requests...");
             AllocateItems(false); // unlimited requests
         }
 
@@ -1144,8 +1135,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepManageAssemblers()
         {
-            //Echo(msg = "Managing assemblers ...");
-            debugText.Add("Managing assemblers ...");
+            debugText.Add("Managing assemblers...");
             ManageAssemblers();
         }
 
@@ -1155,8 +1145,7 @@ PhysicalGunObject/
         /// <returns>Whether the step completed.</returns>
         public void ProcessStepUpdateInventoryPanels()
         {
-            //Echo(msg = "Updating inventory panels ...");
-            debugText.Add("Updating inventory panels ...");
+            debugText.Add("Updating inventory panels...");
             UpdateInventoryPanels();
         }
 
