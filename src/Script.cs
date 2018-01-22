@@ -172,7 +172,7 @@ PhysicalGunObject/
 
         // The maximum run time of the script per call.
         // Measured in milliseconds.
-        const double MAX_RUN_TIME = 30;
+        const double MAX_RUN_TIME = 20;
 
         // The maximum percent load that this script will allow
         // regardless of how long it has been executing.
@@ -668,7 +668,7 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
             // echo compilation statement
             Echo("Compiled TIM " + VERSION_NICE_TEXT);
