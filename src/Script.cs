@@ -172,11 +172,19 @@ PhysicalGunObject/
 
         // The maximum run time of the script per call.
         // Measured in milliseconds.
-        const double MAX_RUN_TIME = 20;
+        const double MAX_RUN_TIME = 25;
 
         // The maximum percent load that this script will allow
         // regardless of how long it has been executing.
         const double MAX_LOAD = 0.8;
+
+        // how often the script should update
+        //     UpdateFrequency.None      - No automatic updating (manual only)
+        //     UpdateFrequency.Once      - next tick (is unset after run)
+        //     UpdateFrequency.Update1   - update every tick
+        //     UpdateFrequency.Update10  - update every 10 ticks
+        //     UpdateFrequency.Update100 - update every 100 ticks
+        const UpdateFrequency UPDATE_FREQUENCY = UpdateFrequency.Update10;
 
         // =================================================
         //                 SCRIPT INTERNALS
@@ -668,7 +676,7 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            Runtime.UpdateFrequency = UPDATE_FREQUENCY;
 
             // echo compilation statement
             Echo("Compiled TIM " + VERSION_NICE_TEXT);
@@ -717,6 +725,18 @@ PhysicalGunObject/
             }
             catch (PutOffExecutionException)
             { }
+            catch (Exception ex)
+            {
+                // if the process step threw an exception, make sure we print the info
+                // we need to debug it
+                string err = "An error occured,\n" +
+                    "please give the following information to the developer:\n" +
+                    string.Format("Current step on error: {0}\n{1}", processStep, ex.ToString().Replace("\r", ""));
+                debugText.Add(err);
+                UpdateStatusPanels();
+                Echo(err);
+                throw ex;
+            }
 
             // update script status and debug panels on every cycle step
             string msg, stepText;
