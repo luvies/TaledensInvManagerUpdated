@@ -1044,6 +1044,7 @@ PhysicalGunObject/
                 ScanBlocks<IMyCollector>();
             ScanBlocks<IMyGasGenerator>();
             ScanBlocks<IMyGasTank>();
+            ScanBlocks<IMyOxygenFarm>(); // scan oxygen farm to allow nanite support
             ScanBlocks<IMyReactor>();
             ScanBlocks<IMyRefinery>();
             ScanBlocks<IMyShipConnector>();
