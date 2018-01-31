@@ -149,7 +149,20 @@ PhysicalGunObject/
 
         // Ore subtypes which refine into Ingots with a different subtype name, or
         // which cannot be refined at all (if set to "").
-        static readonly Dictionary<string, string> ORE_PRODUCT = new Dictionary<string, string> { { "ICE", "" }, { "ORGANIC", "" }, { "SCRAP", "IRON" } };
+        static readonly Dictionary<string, string> ORE_PRODUCT = new Dictionary<string, string>
+        {
+            // vanilla products
+            { "ICE", "" }, { "ORGANIC", "" }, { "SCRAP", "IRON" },
+
+            // better stone products
+            // http://steamcommunity.com/sharedfiles/filedetails/?id=406244471
+            {"DENSE IRON", "IRON"}, {"ICY IRON", "IRON"}, {"HEAZLEWOODITE", "NICKEL"}, {"CATTIERITE", "COBALT"}, {"PYRITE", "GOLD"},
+            {"TAENITE", "NICKEL"}, {"COHENITE", "COBALT"}, {"KAMACITE", "NICKEL"}, {"GLAUCODOT", "COBALT"}, {"ELECTRUM", "GOLD"},
+            {"PORPHYRY", "GOLD"}, {"SPERRYLITE", "PLATINUM"}, {"NIGGLIITE", "PLATINUM"}, {"GALENA", "SILVER"}, {"CHLORARGYRITE", "SILVER"},
+            {"COOPERITE", "PLATINUM"}, {"PETZITE", "SILVER"}, {"HAPKEITE", "SILICON"}, {"DOLOMITE", "MAGNESIUM"}, {"SINOITE", "SILICON"},
+            {"OLIVINE", "MAGNESIUM"}, {"QUARTZ", "SILICON"}, {"AKIMOTOITE", "MAGNESIUM"}, {"WADSLEYITE", "MAGNESIUM"}, {"CARNOTITE", "URANIUM"},
+            {"AUTUNITE", "URANIUM"}, {"URANIAURITE", "GOLD"}
+        };
 
         // Block types/subtypes which restrict item types/subtypes from their first
         // inventory. Missing or "*" subtype indicates all subtypes of the given type.
