@@ -57,6 +57,9 @@ ADVANCED CONFIGURATION
 The settings below may be changed if you like, but read the notes and remember
 that any changes will be reverted when you update the script from the workshop.
 */
+        // whether to use real time (second between calls) or pure UpdateFrequency
+        // for update frequency
+        const bool USE_REAL_TIME = false;
 
         // how often the script should update
         //     UpdateFrequency.None      - No automatic updating (manual only)
@@ -64,11 +67,16 @@ that any changes will be reverted when you update the script from the workshop.
         //     UpdateFrequency.Update1   - update every tick
         //     UpdateFrequency.Update10  - update every 10 ticks
         //     UpdateFrequency.Update100 - update every 100 ticks
+        // (if USE_REAL_TIME == true, this is ignored)
         const UpdateFrequency UPDATE_FREQUENCY = UpdateFrequency.Update100;
+
+        // How often the script should update in milliseconds
+        // (if USE_REAL_TIME == false, this is ignored)
+        const int UPDATE_REAL_TIME = 1000;
 
         // The maximum run time of the script per call.
         // Measured in milliseconds.
-        const double MAX_RUN_TIME = 25;
+        const double MAX_RUN_TIME = 35;
 
         // The maximum percent load that this script will allow
         // regardless of how long it has been executing.
@@ -383,8 +391,15 @@ PhysicalGunObject/
         string[] statsLog = new string[12];
         /// <summary>
         /// The time we started the last cycle at.
+        /// If <see cref="USE_REAL_TIME"/> is <c>true</c>, then it is also used to track
+        /// when the script should next update
         /// </summary>
         DateTime currentCycleStartTime;
+        /// <summary>
+        /// The time to wait before starting the next cycle.
+        /// Only used if <see cref="USE_REAL_TIME"/> is <c>true</c>.
+        /// </summary>
+        TimeSpan cycleUpdateWaitTime = new TimeSpan(0, 0, 0, 0, UPDATE_REAL_TIME);
         /// <summary>
         /// The total number of calls this script has had since compilation.
         /// </summary>
@@ -422,6 +437,11 @@ PhysicalGunObject/
         /// The text to echo at the start of each call.
         /// </summary>
         string timUpdateText;
+        /// <summary>
+        /// Stores the output of Echo so we can effectively ignore some calls
+        /// without overwriting it.
+        /// </summary>
+        StringBuilder echoOutput = new StringBuilder();
 
         /// <summary>
         /// The default quotas.
@@ -453,6 +473,16 @@ PhysicalGunObject/
         Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>> blockErrors = new Dictionary<IMyTerminalBlock, HashSet<IMyTerminalBlock>>();
 
         #endregion
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// A wrapper for the <see cref="Echo"/> function that adds the log to the stored log.
+        /// This allows the log to be remembered and re-outputted without extra work.
+        /// </summary>
+        public Action<string> EchoR;
 
         #endregion
 
@@ -646,6 +676,13 @@ PhysicalGunObject/
 
         public Program()
         {
+            // init echo wrapper
+            EchoR = log =>
+            {
+                echoOutput.AppendLine(log);
+                Echo(log);
+            };
+
             // initialise the process steps we will need to do
             processSteps = new Action[]
             {
@@ -689,10 +726,13 @@ PhysicalGunObject/
             InitBlockRestrictions(DEFAULT_RESTRICTIONS);
 
             // Set run frequency
-            Runtime.UpdateFrequency = UPDATE_FREQUENCY;
+            if (USE_REAL_TIME)
+                Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            else
+                Runtime.UpdateFrequency = UPDATE_FREQUENCY;
 
             // echo compilation statement
-            Echo("Compiled TIM " + VERSION_NICE_TEXT);
+            EchoR("Compiled TIM " + VERSION_NICE_TEXT);
 
             // format terminal info text
             timUpdateText = string.Format(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
@@ -701,12 +741,26 @@ PhysicalGunObject/
         public void Main(string argument)
         {
             // init call
-            currentCycleStartTime = DateTime.Now;
+            // do update frequency check
+            if (USE_REAL_TIME)
+            {
+                DateTime n = DateTime.Now;
+                if ((n - currentCycleStartTime) >= cycleUpdateWaitTime)
+                    currentCycleStartTime = n;
+                else
+                {
+                    Echo(echoOutput.ToString()); // ensure that output is not lost
+                    return;
+                }
+            }
+            else
+                currentCycleStartTime = DateTime.Now;
+            echoOutput.Clear();
             int processStepTmp = processStep;
             bool didAtLeastOneProcess = false;
 
             // output terminal info
-            Echo(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
+            EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
             // reset status and debugging data every cycle
             debugText.Clear();
@@ -727,7 +781,7 @@ PhysicalGunObject/
             }
             catch (ArgumentException ex)
             {
-                Echo(ex.Message);
+                EchoR(ex.Message);
                 processStep = 0;
                 return;
             }
@@ -747,7 +801,7 @@ PhysicalGunObject/
                     string.Format("Current step on error: {0}\n{1}", processStep, ex.ToString().Replace("\r", ""));
                 debugText.Add(err);
                 UpdateStatusPanels();
-                Echo(err);
+                EchoR(err);
                 throw ex;
             }
 
@@ -775,7 +829,7 @@ PhysicalGunObject/
                 stepText = string.Format("step {0}", processStepTmp);
             else
                 stepText = string.Format("steps {0} to {1}", processStepTmp, theoryProcessStep - 1);
-            Echo(msg = string.Format("Completed {0} in {1}ms, {2}% load ({3} instructions)",
+            EchoR(msg = string.Format("Completed {0} in {1}ms, {2}% load ({3} instructions)",
                 stepText, exTime, exLoad, Runtime.CurrentInstructionCount));
             debugText.Add(msg);
             UpdateStatusPanels();
@@ -1003,9 +1057,9 @@ PhysicalGunObject/
             // if there are other programmable blocks of higher index, then they will execute and we won't
             if (selfIndex != firstAvailableIndex)
             {
-                Echo("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
+                EchoR("TIM #" + (firstAvailableIndex + 1) + " is on duty. Standing by.");
                 if (("" + (blocks[firstAvailableIndex] as IMyProgrammableBlock).TerminalRunArgument).Trim() != ("" + Me.TerminalRunArgument).Trim())
-                    Echo("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
+                    EchoR("WARNING: Script arguments do not match TIM #" + (firstAvailableIndex + 1) + ".");
                 throw new IgnoreExecutionException();
             }
         }
