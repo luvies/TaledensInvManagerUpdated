@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.2 (2018-02-04)
+version 1.7.3 (2018-02-XX)
 
 Unoffical maintained version of TIM.
 
@@ -57,6 +57,22 @@ ADVANCED CONFIGURATION
 The settings below may be changed if you like, but read the notes and remember
 that any changes will be reverted when you update the script from the workshop.
 */
+
+        // how often the script should update
+        //     UpdateFrequency.None      - No automatic updating (manual only)
+        //     UpdateFrequency.Once      - next tick (is unset after run)
+        //     UpdateFrequency.Update1   - update every tick
+        //     UpdateFrequency.Update10  - update every 10 ticks
+        //     UpdateFrequency.Update100 - update every 100 ticks
+        const UpdateFrequency UPDATE_FREQUENCY = UpdateFrequency.Update100;
+
+        // The maximum run time of the script per call.
+        // Measured in milliseconds.
+        const double MAX_RUN_TIME = 25;
+
+        // The maximum percent load that this script will allow
+        // regardless of how long it has been executing.
+        const double MAX_LOAD = 0.8;
 
         // Each "Type/" section can have multiple "/Subtype"s, which are formatted like
         // "/Subtype,MinQta,PctQta,Label,Blueprint". Label and Blueprint specified only
@@ -183,22 +199,6 @@ PhysicalGunObject/
         MOB + "SmallMissileLauncherReload:AmmoMagazine/NATO_25x184mm,AmmoMagazine/NATO_5p56x45mm," + NON_AMMO
         ;
 
-        // The maximum run time of the script per call.
-        // Measured in milliseconds.
-        const double MAX_RUN_TIME = 25;
-
-        // The maximum percent load that this script will allow
-        // regardless of how long it has been executing.
-        const double MAX_LOAD = 0.8;
-
-        // how often the script should update
-        //     UpdateFrequency.None      - No automatic updating (manual only)
-        //     UpdateFrequency.Once      - next tick (is unset after run)
-        //     UpdateFrequency.Update1   - update every tick
-        //     UpdateFrequency.Update10  - update every 10 ticks
-        //     UpdateFrequency.Update100 - update every 100 ticks
-        const UpdateFrequency UPDATE_FREQUENCY = UpdateFrequency.Update10;
-
         // =================================================
         //                 SCRIPT INTERNALS
         //
@@ -212,11 +212,11 @@ PhysicalGunObject/
         #region Version
 
         // current script version
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 2;
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 3;
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-02-04";
+        const string VERSION_UPDATE = "2018-02-XX";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
