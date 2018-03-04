@@ -59,7 +59,7 @@ that any changes will be reverted when you update the script from the workshop.
 */
         // whether to use real time (second between calls) or pure UpdateFrequency
         // for update frequency
-        const bool USE_REAL_TIME = false;
+        readonly bool USE_REAL_TIME = false;
 
         // how often the script should update
         //     UpdateFrequency.None      - No automatic updating (manual only)
@@ -2814,9 +2814,9 @@ PhysicalGunObject/
                         rfn.UseConveyorSystem = false;
                         priority = rfn.GetInventory(0).IsItemAt(0) ? -4 : -3;
                         speed = (typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0);
-                        AddInvenRequest(rfn, 0, "ORE", isub, priority, (long)(5 * speed * 1e6 + 0.5));
+                        AddInvenRequest(rfn, 0, "ORE", isub, priority, (long)(10 * speed * 1e6 + 0.5));
                         oreLevel[isub] += Math.Min(Math.Max((int)(oreLevel[isub] * 0.41), 1), (100 / refineryOres.Count));
-                        if (debug) debugText.Add("  " + rfn.CustomName + " assigned " + ((int)(5 * speed + 0.5)) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
+                        if (debug) debugText.Add("  " + rfn.CustomName + " assigned " + ((int)(10 * speed + 0.5)) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
                     }
                     else if (debug) debugText.Add("  " + rfn.CustomName + " unassigned, nothing to do");
                 }
@@ -2968,7 +2968,7 @@ PhysicalGunObject/
                         asm.Mode = MyAssemblerMode.Assembly;
                         data = typeSubData[item.type][item.subType];
                         speed = (data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0);
-                        amount = Math.Max((int)(5 * speed), 1);
+                        amount = Math.Max((int)(10 * speed), 10);
                         asm.AddQueueItem(data.blueprint, (double)amount);
                         itemLevel[item] += (int)Math.Ceiling(1e8 * (double)amount / data.quota);
                         if (debug) debugText.Add("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
