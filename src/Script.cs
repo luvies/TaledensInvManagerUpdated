@@ -39,7 +39,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.3 (2018-02-XX)
+version 1.7.3 (2018-03-04)
 
 Unoffical maintained version of TIM.
 
@@ -51,11 +51,11 @@ Source code:
     to edit this script directly. To view the source code, and possibly give contributions,
     please head to https://github.com/Gorea235/TaledensInvManagerUpdated
 
-**********************
-ADVANCED CONFIGURATION
+*******************
+BASIC CONFIGURATION
 
-The settings below may be changed if you like, but read the notes and remember
-that any changes will be reverted when you update the script from the workshop.
+These are the main settings for TIM. They allow you to adjust how often the script will
+update, and the maximum load of each call before deferring execution to the next call.
 */
         // whether to use real time (second between calls) or pure UpdateFrequency
         // for update frequency
@@ -81,6 +81,14 @@ that any changes will be reverted when you update the script from the workshop.
         // The maximum percent load that this script will allow
         // regardless of how long it has been executing.
         const double MAX_LOAD = 0.8;
+
+/*
+***********************
+ADVANCED CONFIGURATION
+
+The settings below may be changed if you like, but read the notes and remember
+that any changes will be reverted when you update the script from the workshop.
+*/
 
         // Each "Type/" section can have multiple "/Subtype"s, which are formatted like
         // "/Subtype,MinQta,PctQta,Label,Blueprint". Label and Blueprint specified only
@@ -224,7 +232,7 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-02-XX";
+        const string VERSION_UPDATE = "2018-03-04";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
