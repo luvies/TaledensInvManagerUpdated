@@ -1573,10 +1573,10 @@ PhysicalGunObject/
                         // identify the stacked item
                         itype = "" + stacks[s].Content.TypeId;
                         itype = itype.Substring(itype.LastIndexOf('_') + 1);
-                        isub = stacks[s].Content.SubtypeName;
+                        isub = stacks[s].Content.SubtypeId.ToString();
 
                         // new type or subtype?
-                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Content.SubtypeName, null);
+                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Content.SubtypeId.ToString(), null);
                         itype = itype.ToUpper();
                         isub = isub.ToUpper();
 
@@ -1613,7 +1613,7 @@ PhysicalGunObject/
                 {
                     itype = "" + stack.Content.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Content.SubtypeName.ToUpper();
+                    isub = stack.Content.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     typeAmount[itype] -= amount;
@@ -1627,7 +1627,7 @@ PhysicalGunObject/
                 {
                     itype = "" + stack.Content.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Content.SubtypeName.ToUpper();
+                    isub = stack.Content.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     data = typeSubData[itype][isub];
@@ -2604,7 +2604,7 @@ PhysicalGunObject/
             {
                 stype = "" + stacks[s].Content.TypeId;
                 stype = stype.Substring(stype.LastIndexOf('_') + 1).ToUpper();
-                ssub = stacks[s].Content.SubtypeName.ToUpper();
+                ssub = stacks[s].Content.SubtypeId.ToString().ToUpper();
                 if (stype == itype & ssub == isub)
                 {
                     moved = stacks[s].Amount;
@@ -2678,7 +2678,7 @@ PhysicalGunObject/
                 {
                     itype = "" + stacks[0].Content.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Content.SubtypeName.ToUpper();
+                    isub = stacks[0].Content.SubtypeId.ToString().ToUpper();
                     if (typeSubs.ContainsKey(itype) & subTypes.ContainsKey(isub))
                         typeSubData[itype][isub].producers.Add(blk);
                     if (itype == "ORE" & (ORE_PRODUCT.TryGetValue(isub, out isubIng) ? isubIng : (isubIng = isub)) != "" & typeSubData["INGOT"].ContainsKey(isubIng))
@@ -2748,14 +2748,14 @@ PhysicalGunObject/
                 {
                     itype = "" + stacks[0].Content.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Content.SubtypeName.ToUpper();
+                    isub = stacks[0].Content.SubtypeId.ToString().ToUpper();
                     if (itype == "ORE" & oreLevel.ContainsKey(isub))
                         oreLevel[isub] += Math.Max(1, oreLevel[isub] / refineryOres.Count);
                     if (stacks.Count > 1)
                     {
                         itype2 = "" + stacks[1].Content.TypeId;
                         itype2 = itype2.Substring(itype2.LastIndexOf('_') + 1).ToUpper();
-                        isub2 = stacks[1].Content.SubtypeName.ToUpper();
+                        isub2 = stacks[1].Content.SubtypeId.ToString().ToUpper();
                         if (itype2 == "ORE" & oreLevel.ContainsKey(isub2))
                             oreLevel[isub2] += Math.Max(1, oreLevel[isub2] / refineryOres.Count);
                         AddInvenRequest(rfn, 0, itype2, isub2, -2, (long)((double)stacks[1].Amount * 1e6 + 0.5));
