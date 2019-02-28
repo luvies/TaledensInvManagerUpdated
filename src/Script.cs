@@ -2369,7 +2369,25 @@ PhysicalGunObject/
 
             // disable conveyor for some block types
             // (IMyInventoryOwner is supposedly obsolete but there's no other way to do this for all of these block types at once)
-            if (((block is IMyGasGenerator | block is IMyReactor | block is IMyRefinery | block is IMyUserControllableGun) & block is IMyProductionBlock) && ((IMyProductionBlock) block).UseConveyorSystem)
+            if (((block is IMyGasGenerator | block is IMyReactor | block is IMyRefinery ) & block is IMyProductionBlock) && ((IMyProductionBlock) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMyLargeConveyorTurretBase && ((IMyLargeConveyorTurretBase) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMySmallGatlingGun && ((IMySmallGatlingGun) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMySmallMissileLauncher && ((IMySmallMissileLauncher) block).UseConveyorSystem)
             {
                 block.GetActionWithName("UseConveyor").Apply(block);
                 debugText.Add("Disabling conveyor system for " + block.CustomName);
