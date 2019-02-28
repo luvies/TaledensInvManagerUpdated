@@ -35,11 +35,12 @@ namespace Scripts.TIM
         public void Save() => throw new NotImplementedException();
         //public void Main(string argument) => throw new NotImplementedException();
         public void Main(string argument, UpdateType updateSource) => throw new NotImplementedException();
+        public Func<IMyIntergridCommunicationSystem> IGC_ContextGetter { set => throw new NotImplementedException(); }
 
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.3 (2018-03-04)
+version 1.7.5 (2018-03-04)
 
 Unoffical maintained version of TIM.
 
@@ -228,7 +229,7 @@ PhysicalGunObject/
         #region Version
 
         // current script version
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 3;
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 5;
         /// <summary>
         /// Current script update time.
         /// </summary>
@@ -511,7 +512,7 @@ PhysicalGunObject/
         double ExecutionLoad
         {
             get { return Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount; }
-        }
+        }        
 
         #endregion
 
@@ -1522,7 +1523,7 @@ PhysicalGunObject/
             System.Text.RegularExpressions.Match match;
             int i, s, n;
             IMyInventory inven;
-            List<IMyInventoryItem> stacks;
+            List<MyInventoryItem> stacks = new List<MyInventoryItem>();
             string itype, isub;
             InventoryItemData data;
             long amount, total;
@@ -1566,17 +1567,17 @@ PhysicalGunObject/
                 while (i-- > 0)
                 {
                     inven = block.GetInventory(i);
-                    stacks = inven.GetItems();
+                    inven.GetItems(stacks);
                     s = stacks.Count;
                     while (s-- > 0)
                     {
                         // identify the stacked item
-                        itype = "" + stacks[s].Content.TypeId;
+                        itype = "" + stacks[s].Type.TypeId;
                         itype = itype.Substring(itype.LastIndexOf('_') + 1);
-                        isub = stacks[s].Content.SubtypeId.ToString();
+                        isub = stacks[s].Type.SubtypeId.ToString();
 
                         // new type or subtype?
-                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Content.SubtypeId.ToString(), null);
+                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Type.SubtypeId.ToString(), null);
                         itype = itype.ToUpper();
                         isub = isub.ToUpper();
 
@@ -1609,11 +1610,13 @@ PhysicalGunObject/
 
             foreach (IMyInventory inven in invenHidden)
             {
-                foreach (IMyInventoryItem stack in inven.GetItems())
+                List<MyInventoryItem> stacks = new List<MyInventoryItem>();
+                inven.GetItems(stacks);
+                foreach (MyInventoryItem stack in stacks)
                 {
-                    itype = "" + stack.Content.TypeId;
+                    itype = "" + stack.Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Content.SubtypeId.ToString().ToUpper();
+                    isub = stack.Type.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     typeAmount[itype] -= amount;
@@ -1623,11 +1626,13 @@ PhysicalGunObject/
 
             foreach (IMyInventory inven in invenLocked)
             {
-                foreach (IMyInventoryItem stack in inven.GetItems())
+                List<MyInventoryItem> stacks = new List<MyInventoryItem>();
+                inven.GetItems(stacks);
+                foreach (MyInventoryItem stack in stacks)
                 {
-                    itype = "" + stack.Content.TypeId;
+                    itype = "" + stack.Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Content.SubtypeId.ToString().ToUpper();
+                    isub = stack.Type.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     data = typeSubData[itype][isub];
@@ -2364,7 +2369,25 @@ PhysicalGunObject/
 
             // disable conveyor for some block types
             // (IMyInventoryOwner is supposedly obsolete but there's no other way to do this for all of these block types at once)
-            if (((block is IMyGasGenerator | block is IMyReactor | block is IMyRefinery | block is IMyUserControllableGun) & inven.Owner != null) && inven.Owner.UseConveyorSystem)
+            if (((block is IMyGasGenerator | block is IMyReactor | block is IMyRefinery ) & block is IMyProductionBlock) && ((IMyProductionBlock) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMyLargeConveyorTurretBase && ((IMyLargeConveyorTurretBase) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMySmallGatlingGun && ((IMySmallGatlingGun) block).UseConveyorSystem)
+            {
+                block.GetActionWithName("UseConveyor").Apply(block);
+                debugText.Add("Disabling conveyor system for " + block.CustomName);
+            }
+
+            if (block is IMySmallMissileLauncher && ((IMySmallMissileLauncher) block).UseConveyorSystem)
             {
                 block.GetActionWithName("UseConveyor").Apply(block);
                 debugText.Add("Disabling conveyor system for " + block.CustomName);
@@ -2590,7 +2613,7 @@ PhysicalGunObject/
         long TransferItem(string itype, string isub, long amount, IMyInventory fromInven, IMyInventory toInven)
         {
             bool debug = debugLogic.Contains("sorting");
-            List<IMyInventoryItem> stacks;
+            List<MyInventoryItem> stacks = new List<MyInventoryItem>();
             int s;
             VRage.MyFixedPoint remaining, moved;
             uint id;
@@ -2598,13 +2621,13 @@ PhysicalGunObject/
             string stype, ssub;
 
             remaining = (VRage.MyFixedPoint)(amount / 1e6);
-            stacks = fromInven.GetItems();
+            fromInven.GetItems(stacks);
             s = Math.Min(typeSubData[itype][isub].invenSlot[fromInven], stacks.Count);
             while (remaining > 0 & s-- > 0)
             {
-                stype = "" + stacks[s].Content.TypeId;
+                stype = "" + stacks[s].Type.TypeId;
                 stype = stype.Substring(stype.LastIndexOf('_') + 1).ToUpper();
-                ssub = stacks[s].Content.SubtypeId.ToString().ToUpper();
+                ssub = stacks[s].Type.SubtypeId.ToString().ToUpper();
                 if (stype == itype & ssub == isub)
                 {
                     moved = stacks[s].Amount;
@@ -2618,7 +2641,7 @@ PhysicalGunObject/
                     }
                     else if (fromInven.TransferItemTo(toInven, s, null, true, remaining))
                     {
-                        stacks = fromInven.GetItems();
+                        fromInven.GetItems(stacks);
                         if (s < stacks.Count && stacks[s].ItemId == id)
                             moved -= stacks[s].Amount;
                         if (moved <= 0)
@@ -2662,7 +2685,7 @@ PhysicalGunObject/
         void ScanProduction()
         {
             List<IMyTerminalBlock> blocks1 = new List<IMyTerminalBlock>(), blocks2 = new List<IMyTerminalBlock>();
-            List<IMyInventoryItem> stacks;
+            List<MyInventoryItem> stacks = new List<MyInventoryItem>();
             string itype, isub, isubIng;
             List<MyProductionItem> queue = new List<MyProductionItem>();
             ItemId item;
@@ -2673,12 +2696,12 @@ PhysicalGunObject/
             GridTerminalSystem.GetBlocksOfType<IMyRefinery>(blocks2, blk => dockedgrids.Contains(blk.CubeGrid));
             foreach (IMyFunctionalBlock blk in blocks1.Concat(blocks2))
             {
-                stacks = blk.GetInventory(0).GetItems();
+                blk.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0 & blk.Enabled)
                 {
-                    itype = "" + stacks[0].Content.TypeId;
+                    itype = "" + stacks[0].Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Content.SubtypeId.ToString().ToUpper();
+                    isub = stacks[0].Type.SubtypeId.ToString().ToUpper();
                     if (typeSubs.ContainsKey(itype) & subTypes.ContainsKey(isub))
                         typeSubData[itype][isub].producers.Add(blk);
                     if (itype == "ORE" & (ORE_PRODUCT.TryGetValue(isub, out isubIng) ? isubIng : (isubIng = isub)) != "" & typeSubData["INGOT"].ContainsKey(isubIng))
@@ -2714,7 +2737,7 @@ PhysicalGunObject/
             int level, priority;
             List<string> ores = new List<string>();
             Dictionary<string, int> oreLevel = new Dictionary<string, int>();
-            List<IMyInventoryItem> stacks;
+            List<MyInventoryItem> stacks = new List<MyInventoryItem>();
             double speed, oldspeed;
             ProducerWork work;
             bool ready;
@@ -2743,19 +2766,19 @@ PhysicalGunObject/
             foreach (IMyRefinery rfn in refineryOres.Keys)
             {
                 itype = itype2 = isub = isub2 = "";
-                stacks = rfn.GetInventory(0).GetItems();
+                rfn.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0)
                 {
-                    itype = "" + stacks[0].Content.TypeId;
+                    itype = "" + stacks[0].Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Content.SubtypeId.ToString().ToUpper();
+                    isub = stacks[0].Type.SubtypeId.ToString().ToUpper();
                     if (itype == "ORE" & oreLevel.ContainsKey(isub))
                         oreLevel[isub] += Math.Max(1, oreLevel[isub] / refineryOres.Count);
                     if (stacks.Count > 1)
                     {
-                        itype2 = "" + stacks[1].Content.TypeId;
+                        itype2 = "" + stacks[1].Type.TypeId;
                         itype2 = itype2.Substring(itype2.LastIndexOf('_') + 1).ToUpper();
-                        isub2 = stacks[1].Content.SubtypeId.ToString().ToUpper();
+                        isub2 = stacks[1].Type.SubtypeId.ToString().ToUpper();
                         if (itype2 == "ORE" & oreLevel.ContainsKey(isub2))
                             oreLevel[isub2] += Math.Max(1, oreLevel[isub2] / refineryOres.Count);
                         AddInvenRequest(rfn, 0, itype2, isub2, -2, (long)((double)stacks[1].Amount * 1e6 + 0.5));
