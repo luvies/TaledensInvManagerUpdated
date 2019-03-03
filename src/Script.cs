@@ -233,7 +233,7 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-03-04";
+        const string VERSION_UPDATE = "2019-03-03";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
