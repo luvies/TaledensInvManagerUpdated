@@ -233,7 +233,7 @@ PhysicalGunObject/
         /// <summary>
         /// Current script update time.
         /// </summary>
-        const string VERSION_UPDATE = "2018-03-04";
+        const string VERSION_UPDATE = "2019-03-03";
         /// <summary>
         /// A formatted string of the script version.
         /// </summary>
@@ -1567,6 +1567,7 @@ PhysicalGunObject/
                 while (i-- > 0)
                 {
                     inven = block.GetInventory(i);
+                    stacks.Clear();
                     inven.GetItems(stacks);
                     s = stacks.Count;
                     while (s-- > 0)
@@ -1607,10 +1608,11 @@ PhysicalGunObject/
             string itype, isub;
             long amount;
             InventoryItemData data;
+            List<MyInventoryItem> stacks = new List<MyInventoryItem>();
 
             foreach (IMyInventory inven in invenHidden)
             {
-                List<MyInventoryItem> stacks = new List<MyInventoryItem>();
+                stacks.Clear();
                 inven.GetItems(stacks);
                 foreach (MyInventoryItem stack in stacks)
                 {
@@ -1626,7 +1628,7 @@ PhysicalGunObject/
 
             foreach (IMyInventory inven in invenLocked)
             {
-                List<MyInventoryItem> stacks = new List<MyInventoryItem>();
+                stacks.Clear();
                 inven.GetItems(stacks);
                 foreach (MyInventoryItem stack in stacks)
                 {
@@ -2369,28 +2371,43 @@ PhysicalGunObject/
 
             // disable conveyor for some block types
             // (IMyInventoryOwner is supposedly obsolete but there's no other way to do this for all of these block types at once)
-            if (((block is IMyGasGenerator | block is IMyReactor | block is IMyRefinery ) & block is IMyProductionBlock) && ((IMyProductionBlock) block).UseConveyorSystem)
+            if (inven.Owner != null)
             {
-                block.GetActionWithName("UseConveyor").Apply(block);
-                debugText.Add("Disabling conveyor system for " + block.CustomName);
-            }
+                if (block is IMyRefinery && (block as IMyProductionBlock).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
 
-            if (block is IMyLargeConveyorTurretBase && ((IMyLargeConveyorTurretBase) block).UseConveyorSystem)
-            {
-                block.GetActionWithName("UseConveyor").Apply(block);
-                debugText.Add("Disabling conveyor system for " + block.CustomName);
-            }
+                if (block is IMyGasGenerator && (block as IMyGasGenerator).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
 
-            if (block is IMySmallGatlingGun && ((IMySmallGatlingGun) block).UseConveyorSystem)
-            {
-                block.GetActionWithName("UseConveyor").Apply(block);
-                debugText.Add("Disabling conveyor system for " + block.CustomName);
-            }
+                if (block is IMyReactor && (block as IMyReactor).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
 
-            if (block is IMySmallMissileLauncher && ((IMySmallMissileLauncher) block).UseConveyorSystem)
-            {
-                block.GetActionWithName("UseConveyor").Apply(block);
-                debugText.Add("Disabling conveyor system for " + block.CustomName);
+                if (block is IMyLargeConveyorTurretBase && ((IMyLargeConveyorTurretBase)block).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
+
+                if (block is IMySmallGatlingGun && ((IMySmallGatlingGun)block).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
+
+                if (block is IMySmallMissileLauncher && ((IMySmallMissileLauncher)block).UseConveyorSystem)
+                {
+                    block.GetActionWithName("UseConveyor").Apply(block);
+                    debugText.Add("Disabling conveyor system for " + block.CustomName);
+                }
             }
         }
 
@@ -2641,6 +2658,7 @@ PhysicalGunObject/
                     }
                     else if (fromInven.TransferItemTo(toInven, s, null, true, remaining))
                     {
+                        stacks.Clear();
                         fromInven.GetItems(stacks);
                         if (s < stacks.Count && stacks[s].ItemId == id)
                             moved -= stacks[s].Amount;
@@ -2696,6 +2714,7 @@ PhysicalGunObject/
             GridTerminalSystem.GetBlocksOfType<IMyRefinery>(blocks2, blk => dockedgrids.Contains(blk.CubeGrid));
             foreach (IMyFunctionalBlock blk in blocks1.Concat(blocks2))
             {
+                stacks.Clear();
                 blk.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0 & blk.Enabled)
                 {
@@ -2766,6 +2785,7 @@ PhysicalGunObject/
             foreach (IMyRefinery rfn in refineryOres.Keys)
             {
                 itype = itype2 = isub = isub2 = "";
+                stacks.Clear();
                 rfn.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0)
                 {
