@@ -335,7 +335,7 @@ PhysicalGunObject/
 
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
-        static readonly char[] SPACE = new char[] { ' ', '\t', '\u00AD' }, COLON = new char[] { ':' }, NEWLINE = new char[] { '\r', '\n' }, SPACECOMMA = new char[] { ' ', '\t', '\u00AD', ',' };
+        static readonly char[] SPACE = { ' ', '\t', '\u00AD' }, COLON = { ':' }, NEWLINE = { '\r', '\n' }, SPACECOMMA = { ' ', '\t', '\u00AD', ',' };
         /// <summary>
         /// The <c>string.Format</c> delegate.
         /// Used for the shortand version.
@@ -438,12 +438,6 @@ PhysicalGunObject/
         StringBuilder echoOutput = new StringBuilder();
 
         /// <summary>
-        /// The default quotas.
-        /// Seems to be unused so I'm not sure what to do with it.
-        /// </summary>
-        //[Obsolete]
-        Dictionary<ItemId, Quota> defaultQuota = new Dictionary<ItemId, Quota>();
-        /// <summary>
         /// The set of all docked grid (including the current one).
         /// </summary>
         HashSet<IMyCubeGrid> dockedgrids = new HashSet<IMyCubeGrid>();
@@ -509,8 +503,6 @@ PhysicalGunObject/
         /// </summary>
         class IgnoreExecutionException : Exception
         {
-            public IgnoreExecutionException() { }
-            public IgnoreExecutionException(string message) : base(message) { }
         }
 
         /// <summary>
@@ -519,28 +511,11 @@ PhysicalGunObject/
         /// </summary>
         class PutOffExecutionException : Exception
         {
-            public PutOffExecutionException() { }
-            public PutOffExecutionException(string message) : base(message) { }
         }
 
         #endregion
 
         #region Data Structures
-
-        /// <summary>
-        /// Stores quota information for an item.
-        /// </summary>
-        struct Quota
-        {
-            public int minimum;
-            public float ratio;
-
-            public Quota(int m, float r)
-            {
-                minimum = m;
-                ratio = r;
-            }
-        }
 
         /// <summary>
         /// Stores a pair of ints.
@@ -591,7 +566,7 @@ PhysicalGunObject/
 
         class InventoryItemData
         {
-            public string type, subType, label;
+            public string subType, label;
             public MyDefinitionId blueprint;
             public long amount, avail, locked, quota, minimum;
             public float ratio;
@@ -640,15 +615,14 @@ PhysicalGunObject/
                     foundNewItem = true;
                     typeSubs[itemType].Add(itemSubType);
                     subTypes[itemSubType].Add(itemType);
-                    typeSubData[itemType][itemSubType] = new InventoryItemData(itemType, itemSubType, minimum, ratio, (label == "") ? isublabel : label, (blueprint == "") ? isublabel : blueprint);
+                    typeSubData[itemType][itemSubType] = new InventoryItemData(itemSubType, minimum, ratio, (label == "") ? isublabel : label, (blueprint == "") ? isublabel : blueprint);
                     if (blueprint != null)
                         blueprintItem[typeSubData[itemType][itemSubType].blueprint] = new ItemId(itemType, itemSubType);
                 }
             }
 
-            private InventoryItemData(string itype, string isub, long minimum, float ratio, string label, string blueprint)
+            private InventoryItemData(string isub, long minimum, float ratio, string label, string blueprint)
             {
-                this.type = itype;
                 this.subType = isub;
                 this.label = label;
                 this.blueprint = (blueprint == null) ? default(MyDefinitionId) : MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + blueprint);
@@ -878,8 +852,6 @@ PhysicalGunObject/
 
         void ProcessScriptArgs()
         {
-            bool updateTagRegex = true;
-
             // init all args back to default
             argRewriteTags = DEFAULT_ARG_REWRITE_TAGS;
             argTagOpen = DEFAULT_ARG_TAG_OPEN;
@@ -926,7 +898,6 @@ PhysicalGunObject/
                             argTagClose = char.ToUpper(value[1]);
                             debugText.Add(string.Format("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
                         }
-                        updateTagRegex = true;
                         break;
                     case "prefix":
                         argTagPrefix = value.ToUpper();
@@ -934,7 +905,6 @@ PhysicalGunObject/
                             debugText.Add("Tag prefix disabled");
                         else
                             debugText.Add(string.Format("Tag prefix is '{0}'", argTagPrefix));
-                        updateTagRegex = true;
                         break;
                     case "scan":
                         switch (value.ToLower())
@@ -991,13 +961,12 @@ PhysicalGunObject/
                 }
             }
 
-            if (tagRegex == null || updateTagRegex)
-                tagRegex = new System.Text.RegularExpressions.Regex(string.Format(
-                    argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
-                    System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
-                    System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
-                    System.Text.RegularExpressions.Regex.Escape(argTagPrefix)), // format in args
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+            tagRegex = new System.Text.RegularExpressions.Regex(string.Format(
+                argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
+                System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
+                System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
+                System.Text.RegularExpressions.Regex.Escape(argTagPrefix)), // format in args
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
         }
 
         #endregion
@@ -1704,7 +1673,7 @@ PhysicalGunObject/
                         if (ParseItemValueText(null, words, itypeCur, out itype, out isub, out p, out amount, out ratio, out force) & itype == itypeCur & itype != "" & isub != "")
                         {
                             data = typeSubData[itype][isub];
-                            qtypeSubCols[itype][isub] = new string[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
+                            qtypeSubCols[itype][isub] = new[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
                             if ((priority > 0 & (priority < data.qpriority | data.qpriority <= 0)) | (priority == 0 & data.qpriority < 0))
                             {
                                 data.qpriority = priority;
@@ -1764,7 +1733,7 @@ PhysicalGunObject/
                     foreach (InventoryItemData d in typeSubData[qtype].Values)
                     {
                         if (!qtypeSubCols[qtype].ContainsKey(d.subType))
-                            qtypeSubCols[qtype][d.subType] = new string[] { d.label, "" + Math.Round(d.minimum / 1e6, 2), "" + Math.Round(d.ratio * 100.0f, 2) + "%" };
+                            qtypeSubCols[qtype][d.subType] = new[] { d.label, "" + Math.Round(d.minimum / 1e6, 2), "" + Math.Round(d.ratio * 100.0f, 2) + "%" };
                     }
                     foreach (string qsub in qtypeSubCols[qtype].Keys)
                     {
