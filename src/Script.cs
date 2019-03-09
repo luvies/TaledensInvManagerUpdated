@@ -776,7 +776,7 @@ PhysicalGunObject/
             int theoryProcessStep = processStep == 0 ? 13 : processStep;
             int exTime = ExecutionTime;
             double exLoad = Math.Round(100.0f * ExecutionLoad, 1);
-            int unused = 0;
+            int unused;
             statsLog[totalCallCount % statsLog.Length] = ScreenFormatter.Format("" + totalCallCount, 80, out unused, 1) +
                                                          ScreenFormatter.Format((processStep == 0 ? processSteps.Length : processStep) + " / " + processSteps.Length, 125 + unused, out unused, 1, true) +
                                                          ScreenFormatter.Format(exTime + " ms", 145 + unused, out unused, 1) +
@@ -1607,7 +1607,7 @@ PhysicalGunObject/
             string[][] spanLines;
             IMyTextPanel panel2;
             IMySlimBlock slim;
-            Matrix matrix = new Matrix();
+            Matrix matrix;
             StringBuilder sb = new StringBuilder();
             List<string> qtypes = new List<string>(), errors = new List<string>(), scalesubs = new List<string>();
             Dictionary<string, SortedDictionary<string, string[]>> qtypeSubCols = new Dictionary<string, SortedDictionary<string, string[]>>();
@@ -2549,7 +2549,6 @@ PhysicalGunObject/
                 }
 
                 // get the rest from other unlocked invens
-                moved = 0L;
                 foreach (IMyInventory amtInven in invens)
                 {
                     avail = Math.Min(data.invenTotal[amtInven], amount);
@@ -2735,7 +2734,7 @@ PhysicalGunObject/
             // identify refineries that are ready for a new assignment
             foreach (IMyRefinery rfn in refineryOres.Keys)
             {
-                itype = itype2 = isub = isub2 = "";
+                itype = isub = isub2 = "";
                 stacks.Clear();
                 rfn.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0)
@@ -3118,7 +3117,6 @@ PhysicalGunObject/
             if (spanx > 1 | spany > 1)
             {
                 spanLines = sf.ToSpan(width, spanx);
-                matrix = new Matrix();
                 panel.Orientation.GetMatrix(out matrix);
                 for (x = 0; x < spanx; x++)
                 {
@@ -3441,9 +3439,8 @@ PhysicalGunObject/
                             text = colRowText[c][r];
                             charWidth.TryGetValue(text[0], out w);
                             textwidth = colRowWidth[c][r];
-                            if (colBar[c] == true)
+                            if (colBar[c])
                             {
-                                value = 0.0;
                                 if (double.TryParse(text, out value))
                                     value = Math.Min(Math.Max(value, 0.0), 1.0);
                                 i = (int)(colWidth[c] / SZ_SPACE * value + 0.5);
@@ -3488,7 +3485,7 @@ PhysicalGunObject/
                             }
 
                             // while the bar or text runs to the next span, split it
-                            if (colBar[c] == true)
+                            if (colBar[c])
                             {
                                 while (s < span & textwidth > remaining)
                                 {
