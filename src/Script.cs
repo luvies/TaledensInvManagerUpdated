@@ -1744,7 +1744,7 @@ PhysicalGunObject/
                         sf.Add(3, (words.Length > 3) ? words[3] : "", true);
                     }
                 }
-                WriteTableToPanel("TIM Quotas", sf, panel, true, ((errors.Count == 0) ? "" : (String.Join("\n", errors).Trim().ToLower() + "\n\n")), "");
+                WriteTableToPanel("TIM Quotas", sf, panel, true, ((errors.Count == 0) ? "" : (String.Join("\n", errors).Trim().ToLower() + "\n\n")));
             }
 
             // update effective quotas
@@ -1864,7 +1864,7 @@ PhysicalGunObject/
                         {
                             egg = false;
                             blkPnl.SetValueFloat("FontSize", 0.2f);
-                            blkPnl.WritePublicTitle("TIM the Enchanter", false);
+                            blkPnl.WritePublicTitle("TIM the Enchanter");
                             //blkPnl.WritePublicText(panelFiller, false);
                             blkPnl.ShowPublicTextOnScreen();
                             name.Append("THE ENCHANTER ");
@@ -3004,7 +3004,7 @@ PhysicalGunObject/
             {
                 sf = new ScreenFormatter(6);
                 sf.SetBar(0);
-                sf.SetFill(0, 1);
+                sf.SetFill(0);
                 sf.SetAlign(2, 1);
                 sf.SetAlign(3, 1);
                 sf.SetAlign(4, 1);
@@ -3048,7 +3048,7 @@ PhysicalGunObject/
                 sf.SetWidth(3, ScreenFormatter.GetWidth("8.88" + ((maxamt >= 1000000000000L) ? " M" : ((maxamt >= 1000000000L) ? " K" : "")), true));
                 sf.SetWidth(5, ScreenFormatter.GetWidth("8.88" + ((maxqta >= 1000000000000L) ? " M" : ((maxqta >= 1000000000L) ? " K" : "")), true));
                 foreach (IMyTextPanel panel in panels)
-                    WriteTableToPanel("TIM Inventory", sf, panel, true);
+                    WriteTableToPanel("TIM Inventory", sf, panel);
             }
         }
 
@@ -3067,10 +3067,10 @@ PhysicalGunObject/
 
                 foreach (IMyTextPanel panel in statusPanels)
                 {
-                    panel.WritePublicTitle("Script Status", false);
+                    panel.WritePublicTitle("Script Status");
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Status panels cannot be spanned");
-                    panel.WritePublicText(sb.ToString(), false);
+                    panel.WritePublicText(sb.ToString());
                     panel.ShowPublicTextOnScreen();
                 }
             }
@@ -3084,10 +3084,10 @@ PhysicalGunObject/
                 }
                 foreach (IMyTextPanel panel in debugPanels)
                 {
-                    panel.WritePublicTitle("Script Debugging", false);
+                    panel.WritePublicTitle("Script Debugging");
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Debug panels cannot be spanned");
-                    panel.WritePublicText(String.Join("\n", debugText), false);
+                    panel.WritePublicText(String.Join("\n", debugText));
                     panel.ShowPublicTextOnScreen();
                 }
             }
@@ -3158,8 +3158,8 @@ PhysicalGunObject/
                             if (x == 0)
                                 text += ((y == 0) ? before : (((y + 1) == spany) ? after : ""));
                             spanpanel.SetValueFloat("FontSize", fontsize);
-                            spanpanel.WritePublicTitle(title + " (" + (x + 1) + "," + (y + 1) + ")", false);
-                            spanpanel.WritePublicText(text, false);
+                            spanpanel.WritePublicTitle(title + " (" + (x + 1) + "," + (y + 1) + ")");
+                            spanpanel.WritePublicText(text);
                             spanpanel.ShowPublicTextOnScreen();
                         }
                         r += height;
@@ -3169,8 +3169,8 @@ PhysicalGunObject/
             else
             {
                 panel.SetValueFloat("FontSize", fontsize);
-                panel.WritePublicTitle(title, false);
-                panel.WritePublicText(before + sf.ToString(width) + after, false);
+                panel.WritePublicTitle(title);
+                panel.WritePublicText(before + sf.ToString(width) + after);
                 panel.ShowPublicTextOnScreen();
             }
         }
@@ -3559,7 +3559,7 @@ PhysicalGunObject/
 
             public string ToString(int width = 0)
             {
-                return String.Join("\n", ToSpan(width, 1)[0]);
+                return String.Join("\n", ToSpan(width)[0]);
             } // ToString()
 
         }
