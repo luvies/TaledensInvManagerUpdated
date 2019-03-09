@@ -2569,7 +2569,6 @@ PhysicalGunObject/
                 if (limited & amount > 0L)
                 {
                     debugText.Add("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
-                    continue;
                 }
             }
 
