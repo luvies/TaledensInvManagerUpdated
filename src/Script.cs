@@ -1003,7 +1003,7 @@ PhysicalGunObject/
         {
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
+            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, blk => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
 
             // check to see if this block is the first available TIM
             int selfIndex = blocks.IndexOf(Me); // current index in search
@@ -1760,7 +1760,7 @@ PhysicalGunObject/
                     }
                     if (scalesubs.Count > 0)
                     {
-                        scalesubs.Sort((string s1, string s2) =>
+                        scalesubs.Sort((s1, s2) =>
                         {
                             InventoryItemData d1 = typeSubData[qtype][s1], d2 = typeSubData[qtype][s2];
                             long q1 = (long)(d1.amount / d1.ratio), q2 = (long)(d2.amount / d2.ratio);
@@ -2782,14 +2782,14 @@ PhysicalGunObject/
             // skip refinery:ore assignment if there are no ores or ready refineries
             if (ores.Count > 0 & refineries.Count > 0)
             {
-                ores.Sort((string o1, string o2) =>
+                ores.Sort((o1, o2) =>
                 {
                     string i1, i2;
                     if (!ORE_PRODUCT.TryGetValue(o1, out i1)) i1 = o1;
                     if (!ORE_PRODUCT.TryGetValue(o2, out i2)) i2 = o2;
                     return -1 * typeSubData["INGOT"][i1].quota.CompareTo(typeSubData["INGOT"][i2].quota);
                 });
-                refineries.Sort((IMyRefinery r1, IMyRefinery r2) => refineryOres[r1].Count.CompareTo(refineryOres[r2].Count));
+                refineries.Sort((r1, r2) => refineryOres[r1].Count.CompareTo(refineryOres[r2].Count));
                 foreach (IMyRefinery rfn in refineries)
                 {
                     isub = "";
@@ -2932,7 +2932,7 @@ PhysicalGunObject/
             {
                 items = new List<ItemId>(itemLevel.Keys);
                 items.Sort((i1, i2) => -1 * typeSubData[i1.type][i1.subType].quota.CompareTo(typeSubData[i2.type][i2.subType].quota));
-                assemblers.Sort((IMyAssembler a1, IMyAssembler a2) => assemblerItems[a1].Count.CompareTo(assemblerItems[a2].Count));
+                assemblers.Sort((a1, a2) => assemblerItems[a1].Count.CompareTo(assemblerItems[a2].Count));
                 foreach (IMyAssembler asm in assemblers)
                 {
                     item = new ItemId("", "");
