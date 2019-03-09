@@ -623,18 +623,18 @@ PhysicalGunObject/
 
             private InventoryItemData(string isub, long minimum, float ratio, string label, string blueprint)
             {
-                this.subType = isub;
+                subType = isub;
                 this.label = label;
                 this.blueprint = (blueprint == null) ? default(MyDefinitionId) : MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + blueprint);
-                this.amount = this.avail = this.locked = this.quota = 0L;
+                amount = avail = locked = quota = 0L;
                 this.minimum = (long)((double)minimum * 1000000.0 + 0.5);
                 this.ratio = (ratio / 100.0f);
-                this.qpriority = -1;
-                this.hold = this.jam = 0;
-                this.invenTotal = new Dictionary<IMyInventory, long>();
-                this.invenSlot = new Dictionary<IMyInventory, int>();
-                this.producers = new HashSet<IMyFunctionalBlock>();
-                this.prdSpeed = new Dictionary<string, double>();
+                qpriority = -1;
+                hold = jam = 0;
+                invenTotal = new Dictionary<IMyInventory, long>();
+                invenSlot = new Dictionary<IMyInventory, int>();
+                producers = new HashSet<IMyFunctionalBlock>();
+                prdSpeed = new Dictionary<string, double>();
             }
         }
 
@@ -3325,79 +3325,79 @@ PhysicalGunObject/
             public ScreenFormatter(int numCols, int padding = 1)
             {
                 this.numCols = numCols;
-                this.numRows = 0;
+                numRows = 0;
                 this.padding = padding;
-                this.colRowText = new List<string>[numCols];
-                this.colRowWidth = new List<int>[numCols];
-                this.colAlign = new int[numCols];
-                this.colFill = new int[numCols];
-                this.colBar = new bool[numCols];
-                this.colWidth = new int[numCols];
+                colRowText = new List<string>[numCols];
+                colRowWidth = new List<int>[numCols];
+                colAlign = new int[numCols];
+                colFill = new int[numCols];
+                colBar = new bool[numCols];
+                colWidth = new int[numCols];
                 for (int c = 0; c < numCols; c++)
                 {
-                    this.colRowText[c] = new List<string>();
-                    this.colRowWidth[c] = new List<int>();
-                    this.colAlign[c] = -1;
-                    this.colFill[c] = 0;
-                    this.colBar[c] = false;
-                    this.colWidth[c] = 0;
+                    colRowText[c] = new List<string>();
+                    colRowWidth[c] = new List<int>();
+                    colAlign[c] = -1;
+                    colFill[c] = 0;
+                    colBar[c] = false;
+                    colWidth[c] = 0;
                 }
             } // ScreenFormatter()
 
             public void Add(int col, string text, bool memoize = false)
             {
                 int width = 0;
-                this.colRowText[col].Add(text);
-                if (this.colBar[col] == false)
+                colRowText[col].Add(text);
+                if (colBar[col] == false)
                 {
                     width = GetWidth(text, memoize);
-                    this.colWidth[col] = Math.Max(this.colWidth[col], width);
+                    colWidth[col] = Math.Max(colWidth[col], width);
                 }
-                this.colRowWidth[col].Add(width);
-                this.numRows = Math.Max(this.numRows, this.colRowText[col].Count);
+                colRowWidth[col].Add(width);
+                numRows = Math.Max(numRows, colRowText[col].Count);
             } // Add()
 
             public void AddBlankRow()
             {
-                for (int c = 0; c < this.numCols; c++)
+                for (int c = 0; c < numCols; c++)
                 {
-                    this.colRowText[c].Add("");
-                    this.colRowWidth[c].Add(0);
+                    colRowText[c].Add("");
+                    colRowWidth[c].Add(0);
                 }
-                this.numRows++;
+                numRows++;
             } // AddBlankRow()
 
             public int GetNumRows()
             {
-                return this.numRows;
+                return numRows;
             } // GetNumRows()
 
             public int GetMinWidth()
             {
-                int width = this.padding * SZ_SPACE;
-                for (int c = 0; c < this.numCols; c++)
-                    width += this.padding * SZ_SPACE + this.colWidth[c];
+                int width = padding * SZ_SPACE;
+                for (int c = 0; c < numCols; c++)
+                    width += padding * SZ_SPACE + colWidth[c];
                 return width;
             } // GetMinWidth()
 
             public void SetAlign(int col, int align)
             {
-                this.colAlign[col] = align;
+                colAlign[col] = align;
             } // SetAlign()
 
             public void SetFill(int col, int fill = 1)
             {
-                this.colFill[col] = fill;
+                colFill[col] = fill;
             } // SetFill()
 
             public void SetBar(int col, bool bar = true)
             {
-                this.colBar[col] = bar;
+                colBar[col] = bar;
             } // SetBar()
 
             public void SetWidth(int col, int width)
             {
-                this.colWidth[col] = width;
+                colWidth[col] = width;
             } // SetWidth()
 
             public string[][] ToSpan(int width = 0, int span = 1)
@@ -3412,56 +3412,56 @@ PhysicalGunObject/
 
                 // clone the user-defined widths and tally fill columns
                 colWidth = (int[])this.colWidth.Clone();
-                unused = width * span - this.padding * SZ_SPACE;
+                unused = width * span - padding * SZ_SPACE;
                 remaining = 0;
-                for (c = 0; c < this.numCols; c++)
+                for (c = 0; c < numCols; c++)
                 {
-                    unused -= this.padding * SZ_SPACE;
-                    if (this.colFill[c] == 0)
+                    unused -= padding * SZ_SPACE;
+                    if (colFill[c] == 0)
                         unused -= colWidth[c];
-                    remaining += this.colFill[c];
+                    remaining += colFill[c];
                 }
 
                 // distribute remaining width to fill columns
-                for (c = 0; c < this.numCols & remaining > 0; c++)
+                for (c = 0; c < numCols & remaining > 0; c++)
                 {
-                    if (this.colFill[c] > 0)
+                    if (colFill[c] > 0)
                     {
-                        colWidth[c] = Math.Max(colWidth[c], this.colFill[c] * unused / remaining);
+                        colWidth[c] = Math.Max(colWidth[c], colFill[c] * unused / remaining);
                         unused -= colWidth[c];
-                        remaining -= this.colFill[c];
+                        remaining -= colFill[c];
                     }
                 }
 
                 // initialize output arrays
                 spanLines = new string[span][];
                 for (s = 0; s < span; s++)
-                    spanLines[s] = new string[this.numRows];
+                    spanLines[s] = new string[numRows];
                 span--; // make "span" inclusive so "s < span" implies one left
 
                 // render all rows and columns
                 i = 0;
                 sb = new StringBuilder();
-                for (r = 0; r < this.numRows; r++)
+                for (r = 0; r < numRows; r++)
                 {
                     sb.Clear();
                     s = 0;
                     remaining = width;
                     unused = 0;
-                    for (c = 0; c < this.numCols; c++)
+                    for (c = 0; c < numCols; c++)
                     {
-                        unused += this.padding * SZ_SPACE;
-                        if (r >= this.colRowText[c].Count || colRowText[c][r] == "")
+                        unused += padding * SZ_SPACE;
+                        if (r >= colRowText[c].Count || colRowText[c][r] == "")
                         {
                             unused += colWidth[c];
                         }
                         else
                         {
                             // render the bar, or fetch the cell text
-                            text = this.colRowText[c][r];
+                            text = colRowText[c][r];
                             charWidth.TryGetValue(text[0], out w);
-                            textwidth = this.colRowWidth[c][r];
-                            if (this.colBar[c] == true)
+                            textwidth = colRowWidth[c][r];
+                            if (colBar[c] == true)
                             {
                                 value = 0.0;
                                 if (double.TryParse(text, out value))
@@ -3472,11 +3472,11 @@ PhysicalGunObject/
                             }
 
                             // if the column is not left-aligned, calculate left spacing
-                            if (this.colAlign[c] > 0)
+                            if (colAlign[c] > 0)
                             {
                                 unused += (colWidth[c] - textwidth);
                             }
-                            else if (this.colAlign[c] == 0)
+                            else if (colAlign[c] == 0)
                             {
                                 unused += (colWidth[c] - textwidth) / 2;
                             }
@@ -3498,17 +3498,17 @@ PhysicalGunObject/
                             remaining += unused;
 
                             // if the column is not right-aligned, calculate right spacing
-                            if (this.colAlign[c] < 0)
+                            if (colAlign[c] < 0)
                             {
                                 unused += (colWidth[c] - textwidth);
                             }
-                            else if (this.colAlign[c] == 0)
+                            else if (colAlign[c] == 0)
                             {
                                 unused += (colWidth[c] - textwidth) - ((colWidth[c] - textwidth) / 2);
                             }
 
                             // while the bar or text runs to the next span, split it
-                            if (this.colBar[c] == true)
+                            if (colBar[c] == true)
                             {
                                 while (s < span & textwidth > remaining)
                                 {
@@ -3559,7 +3559,7 @@ PhysicalGunObject/
 
             public string ToString(int width = 0)
             {
-                return String.Join("\n", this.ToSpan(width, 1)[0]);
+                return String.Join("\n", ToSpan(width, 1)[0]);
             } // ToString()
 
         }
