@@ -397,7 +397,7 @@ PhysicalGunObject/
         /// <summary>
         /// The total number of calls this script has had since compilation.
         /// </summary>
-        long totalCallCount = 0;
+        long totalCallCount;
         /// <summary>
         /// The number of items transfers this call.
         /// </summary>
@@ -413,7 +413,7 @@ PhysicalGunObject/
         /// <summary>
         /// The current step in the TIM process cycle.
         /// </summary>
-        int processStep = 0;
+        int processStep;
         /// <summary>
         /// All of the process steps that TIM will need to take,
         /// </summary>
@@ -421,12 +421,12 @@ PhysicalGunObject/
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
-        System.Text.RegularExpressions.Regex tagRegex = null;
+        System.Text.RegularExpressions.Regex tagRegex;
         /// <summary>
         /// Whether a new item (e.g. from a mod) has been found.
         /// Used to 
         /// </summary>
-        static bool foundNewItem = false;
+        static bool foundNewItem;
         /// <summary>
         /// The text to echo at the start of each call.
         /// </summary>
@@ -2363,11 +2363,11 @@ PhysicalGunObject/
         }
 
         // ================ local persisted vars ================
-        List<int> AllocateItems_priorities = null;
+        List<int> AllocateItems_priorities;
         int AllocateItems_prioritiesIndex;
-        List<string> AllocateItems_inventoryRequestTypes = null;
+        List<string> AllocateItems_inventoryRequestTypes;
         int AllocateItems_inventoryRequestTypesIndex;
-        List<string> AllocateItems_inventoryRequestSubTypes = null;
+        List<string> AllocateItems_inventoryRequestSubTypes;
         int AllocateItems_inventoryRequestSubTypesIndex;
         /// <summary>
         /// Allocates all inventory items.
