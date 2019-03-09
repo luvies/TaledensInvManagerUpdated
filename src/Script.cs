@@ -627,7 +627,7 @@ PhysicalGunObject/
                 this.label = label;
                 this.blueprint = (blueprint == null) ? default(MyDefinitionId) : MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + blueprint);
                 amount = avail = locked = quota = 0L;
-                this.minimum = (long)((double)minimum * 1000000.0 + 0.5);
+                this.minimum = (long)(minimum * 1000000.0 + 0.5);
                 this.ratio = (ratio / 100.0f);
                 qpriority = -1;
                 hold = jam = 0;
@@ -2860,7 +2860,7 @@ PhysicalGunObject/
 
             // scan inventory levels
             typeAmount.TryGetValue("COMPONENT", out ttlCmp);
-            amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => (d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f)) ? (d.amount / Math.Max((double)d.minimum, 17.5 * d.ratio * ttlCmp)) : 2.0));
+            amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => (d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f)) ? (d.amount / Math.Max(d.minimum, 17.5 * d.ratio * ttlCmp)) : 2.0));
             if (debug) debugText.Add("  Component par L=" + amount + "%");
             foreach (string itype in types)
             {
@@ -2976,7 +2976,7 @@ PhysicalGunObject/
                         speed = (data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0);
                         amount = Math.Max((int)(10 * speed), 10);
                         asm.AddQueueItem(data.blueprint, (double)amount);
-                        itemLevel[item] += (int)Math.Ceiling(1e8 * (double)amount / data.quota);
+                        itemLevel[item] += (int)Math.Ceiling(1e8 * amount / data.quota);
                         if (debug) debugText.Add("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
                     }
                     else if (debug) debugText.Add("  " + asm.CustomName + " unassigned, nothing to do");
@@ -3126,12 +3126,12 @@ PhysicalGunObject/
             if (fontsize < 0.25f)
                 fontsize = 1.0f;
             if (x > 0)
-                fontsize = Math.Min(fontsize, Math.Max(0.5f, (float)(width * 100 / x) / 100.0f));
+                fontsize = Math.Min(fontsize, Math.Max(0.5f, width * 100 / x / 100.0f));
             if (y > 0)
-                fontsize = Math.Min(fontsize, Math.Max(0.5f, (float)(1760 / y) / 100.0f));
+                fontsize = Math.Min(fontsize, Math.Max(0.5f, 1760 / y / 100.0f));
 
             // calculate how much space is available on each panel
-            width = (int)((float)width / fontsize);
+            width = (int)(width / fontsize);
             height = (int)(17.6f / fontsize);
 
             // write to each panel
