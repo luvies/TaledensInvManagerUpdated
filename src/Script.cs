@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Sandbox.Common;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
 using Sandbox.Engine;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
@@ -24,7 +22,7 @@ namespace Scripts.TIM
         /*-*/
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
-version 1.7.7 (2019-03-07)
+version 1.7.8 (2019-11-03)
 
 Unoffical maintained version of TIM.
 
