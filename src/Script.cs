@@ -1,27 +1,28 @@
-/*-*/
-// Base file from
-// https://github.com/Gorea235/SpaceEngineers_IngameScriptingBase
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Sandbox.Common;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
-using Sandbox.Engine;
+﻿// Base file from
+// https://github.com/Gorea235/SpaceEngineers_IngameScriptingBaseusing Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
-using Sandbox.Game;
 using SpaceEngineers.Game.ModAPI.Ingame;
-using VRageMath;
+using System.Collections.Generic;
+using System.Collections;
+using System.Linq;
+using System.Text;
+using System;
+using VRage.Collections;
+using VRage.Game.Components;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
+using VRage;
+using VRageMath;
 
-namespace Scripts.TIM
+namespace IngameScript
 {
-    class Program : MyGridProgram
+        class Program : MyGridProgram
     {
-        /*-*/
+        #region mdk preserve
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
 version 1.7.7 (2019-03-07)
@@ -208,7 +209,8 @@ PhysicalGunObject/
         // =================================================
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
-        /*m*/
+        #endregion mdk preserve
+
         #region Fields
 
         #region Version
@@ -3545,4 +3547,3 @@ PhysicalGunObject/
         /*-*/
     }
 }
-/*-*/
