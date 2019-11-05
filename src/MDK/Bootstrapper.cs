@@ -1,6 +1,6 @@
 ﻿using Malware.MDKUtilities;
 
-namespace IngameScript.MDK
+namespace Scripts.TIM.MDK
 {
     public class TestBootstrapper
     {
