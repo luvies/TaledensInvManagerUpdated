@@ -8,24 +8,13 @@ The workshop item can be found [here](http://steamcommunity.com/sharedfiles/file
 
 ## Intellisense
 
-To make the repo better for anyone to grab and use, I've set up the .csproj file to look for the game libraries in the `(repo location)/gamelibs` location. I recommend that you use a symbolic link to the `(game install folder)/Bin64` folder (since it will then also allow for game updates), however, if that is not possible, then you need to copy the following files into it:
+To make the repo better for anyone to grab and use, I've set up the project to use the [MDK-SE](https://github.com/malware-dev/MDK-SE). Install the [latest release](https://github.com/malware-dev/MDK-SE/releases) to your visual studio 2019 instance to get the tools set uup.
 
-* `Sandbox.Common.dll`
-* `Sandbox.Common.xml`
-* `Sandbox.Game.dll`
-* `SpaceEngineers.Game.dll`
-* `SpaceEngineers.Game.xml`
-* `VRage.dll`
-* `VRage.Game.dll`
-* `VRage.Game.xml`
-* `VRage.Library.dll`
-* `VRage.Library.xml`
-* `VRage.Math.dll`
-* `VRage.Math.xml`
+Once installed the first time you open the project it will ask you to repair the project, it should automatically pick up your install location of your Space Engineers game and use it during the development process. You may need to close and re-open the project after doing this to get Intellisense to work. If it did not automatically pick up the settings or you would like it to use a different installation of Space Engineers you can right click on the project and choose "MDK Script Options" to change the settings.
 
 ## Building
 
-To generate a PB-compatible file, build the project and use the source generated in `bin/out/Script.cs`. To build, use Visual Studio, as I have set up the project to run the necessary commands that are needed to build the script. This can be done via Build->Build Solution via the top dropdowns, or Ctrl-Shift-B.
+To generate a PB-compatible file, right click on the project and choose "MDK Deploy Script" and it will automatically deploy the script to a location that can be picked up by the game automatically.
 
 ## Todo
 

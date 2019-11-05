@@ -264,3 +264,6 @@ __pycache__/
 # Ignore the game lib files (since I'm not allowed to distribute them)
 gamelibs/
 gamelibs
+
+# Don't include the paths properties file, the MDK will regenerate it on first load.
+/src/MDK/mdk.paths.props
