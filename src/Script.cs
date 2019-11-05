@@ -18,7 +18,7 @@ using VRage.Game;
 using VRage;
 using VRageMath;
 
-namespace Scripts.TIM
+namespace IngameScript
 {
         class Program : MyGridProgram
     {

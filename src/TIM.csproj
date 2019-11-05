@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A4D165AF-E180-4224-8C3C-9FED915FE024}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Scripts.TIM</RootNamespace>
+    <RootNamespace>IngameScript</RootNamespace>
     <AssemblyName>TaledensInvManagerUpdated</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
