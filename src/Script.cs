@@ -1,27 +1,24 @@
 /*-*/
 // Base file from
 // https://github.com/Gorea235/SpaceEngineers_IngameScriptingBase
+using Sandbox.ModAPI.Ingame;
+using Sandbox.ModAPI.Interfaces;
+using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Sandbox.Common;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
-using Sandbox.Engine;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using Sandbox.Game;
-using SpaceEngineers.Game.ModAPI.Ingame;
-using VRageMath;
-using VRage.Game.ModAPI.Ingame;
 using VRage.Game;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame;
+using VRageMath;
 
-namespace Scripts.TIM
+namespace IngameScript
 {
     class Program : MyGridProgram
     {
-        /*-*/
+        //  #region mdk preserve
+
         /*
 Taleden's Inventory Manager - Updated (Unofficial)
 version 1.7.7 (2019-03-07)
@@ -44,7 +41,7 @@ update, and the maximum load of each call before deferring execution to the next
 */
         // whether to use real time (second between calls) or pure UpdateFrequency
         // for update frequency
-        readonly bool USE_REAL_TIME = false;
+        readonly bool USE_REAL_TIME = true;
 
         // how often the script should update
         //     UpdateFrequency.None      - No automatic updating (manual only)
@@ -67,13 +64,13 @@ update, and the maximum load of each call before deferring execution to the next
         // regardless of how long it has been executing.
         const double MAX_LOAD = 0.8;
 
-/*
-***********************
-ADVANCED CONFIGURATION
+        /*
+        ***********************
+        ADVANCED CONFIGURATION
 
-The settings below may be changed if you like, but read the notes and remember
-that any changes will be reverted when you update the script from the workshop.
-*/
+        The settings below may be changed if you like, but read the notes and remember
+        that any changes will be reverted when you update the script from the workshop.
+        */
 
         // Each "Type/" section can have multiple "/Subtype"s, which are formatted like
         // "/Subtype,MinQta,PctQta,Label,Blueprint". Label and Blueprint specified only
@@ -185,6 +182,7 @@ PhysicalGunObject/
         // inventory. Missing or "*" subtype indicates all subtypes of the given type.
         const string DEFAULT_RESTRICTIONS =
         MOB + "Assembler:AmmoMagazine,Component,GasContainerObject,Ore,OxygenContainerObject,PhysicalGunObject\n" +
+        MOB + "Assembler/BasicAssembler:AmmoMagazine,Component,GasContainerObject,Ore,OxygenContainerObject,PhysicalGunObject,Ingot/Gold,Ingot/Uranium,Ingot/Platinum\n" +
         MOB + "InteriorTurret:AmmoMagazine/Missile200mm,AmmoMagazine/NATO_25x184mm," + NON_AMMO +
         MOB + "LargeGatlingTurret:AmmoMagazine/Missile200mm,AmmoMagazine/NATO_5p56x45mm," + NON_AMMO +
         MOB + "LargeMissileTurret:AmmoMagazine/NATO_25x184mm,AmmoMagazine/NATO_5p56x45mm," + NON_AMMO +
@@ -201,11 +199,14 @@ PhysicalGunObject/
         MOB + "Parachute:Ingot,Ore,OxygenContainerObject,PhysicalGunObject,AmmoMagazine,GasContainerObject,Component/Construction,Component/MetalGrid,Component/InteriorPlate,Component/SteelPlate,Component/Girder,Component/SmallTube,Component/LargeTube,Component/Motor,Component/Display,Component/BulletproofGlass,Component/Superconductor,Component/Computer,Component/Reactor,Component/Thrust,Component/GravityGenerator,Component/Medical,Component/RadioCommunication,Component/Detector,Component/Explosives,Component/Scrap,Component/SolarCell,Component/PowerCell"
         ;
 
+
         // =================================================
         //                 SCRIPT INTERNALS
         //
         //            Do not edit anything below
         // =================================================
+
+        // #endregion
         const string MOB = "MyObjectBuilder_";
         const string NON_AMMO = "Component,GasContainerObject,Ingot,Ore,OxygenContainerObject,PhysicalGunObject\n";
         /*m*/
@@ -214,7 +215,7 @@ PhysicalGunObject/
         #region Version
 
         // current script version
-        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 7;
+        const int VERSION_MAJOR = 1, VERSION_MINOR = 7, VERSION_REVISION = 8;
         /// <summary>
         /// Current script update time.
         /// </summary>
@@ -335,7 +336,7 @@ PhysicalGunObject/
 
         const StringComparison OIC = StringComparison.OrdinalIgnoreCase;
         const StringSplitOptions REE = StringSplitOptions.RemoveEmptyEntries;
-        static readonly char[] SPACE = { ' ', '\t', '\u00AD' }, COLON = { ':' }, NEWLINE = { '\r', '\n' }, SPACECOMMA = { ' ', '\t', '\u00AD', ',' };
+        static readonly char[] SPACE = new char[] { ' ', '\t', '\u00AD' }, COLON = new char[] { ':' }, NEWLINE = new char[] { '\r', '\n' }, SPACECOMMA = new char[] { ' ', '\t', '\u00AD', ',' };
         /// <summary>
         /// The <c>string.Format</c> delegate.
         /// Used for the shortand version.
@@ -397,7 +398,7 @@ PhysicalGunObject/
         /// <summary>
         /// The total number of calls this script has had since compilation.
         /// </summary>
-        long totalCallCount;
+        long totalCallCount = 0;
         /// <summary>
         /// The number of items transfers this call.
         /// </summary>
@@ -413,7 +414,7 @@ PhysicalGunObject/
         /// <summary>
         /// The current step in the TIM process cycle.
         /// </summary>
-        int processStep;
+        int processStep = 0;
         /// <summary>
         /// All of the process steps that TIM will need to take,
         /// </summary>
@@ -421,12 +422,12 @@ PhysicalGunObject/
         /// <summary>
         /// Regex for testing for whether a block has a TIM tag.
         /// </summary>
-        System.Text.RegularExpressions.Regex tagRegex;
+        System.Text.RegularExpressions.Regex tagRegex = null;
         /// <summary>
         /// Whether a new item (e.g. from a mod) has been found.
         /// Used to 
         /// </summary>
-        static bool foundNewItem;
+        static bool foundNewItem = false;
         /// <summary>
         /// The text to echo at the start of each call.
         /// </summary>
@@ -436,6 +437,8 @@ PhysicalGunObject/
         /// without overwriting it.
         /// </summary>
         StringBuilder echoOutput = new StringBuilder();
+        public StringBuilder sb = new StringBuilder();
+
 
         /// <summary>
         /// The set of all docked grid (including the current one).
@@ -480,9 +483,9 @@ PhysicalGunObject/
         /// The length of time we have been executing for.
         /// Measured in milliseconds.
         /// </summary>
-        int ExecutionTime
+        float ExecutionTime
         {
-            get { return (int)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5); }
+            get { return (float)((DateTime.Now - currentCycleStartTime).TotalMilliseconds + 0.5); }
         }
 
         /// <summary>
@@ -491,7 +494,7 @@ PhysicalGunObject/
         double ExecutionLoad
         {
             get { return Runtime.CurrentInstructionCount / Runtime.MaxInstructionCount; }
-        }        
+        }
 
         #endregion
 
@@ -503,6 +506,8 @@ PhysicalGunObject/
         /// </summary>
         class IgnoreExecutionException : Exception
         {
+            public IgnoreExecutionException() { }
+            public IgnoreExecutionException(string message) : base(message) { }
         }
 
         /// <summary>
@@ -511,11 +516,28 @@ PhysicalGunObject/
         /// </summary>
         class PutOffExecutionException : Exception
         {
+            public PutOffExecutionException() { }
+            public PutOffExecutionException(string message) : base(message) { }
         }
 
         #endregion
 
         #region Data Structures
+
+        /// <summary>
+        /// Stores quota information for an item.
+        /// </summary>
+        struct Quota
+        {
+            public int minimum;
+            public float ratio;
+
+            public Quota(int m, float r)
+            {
+                minimum = m;
+                ratio = r;
+            }
+        }
 
         /// <summary>
         /// Stores a pair of ints.
@@ -566,7 +588,7 @@ PhysicalGunObject/
 
         class InventoryItemData
         {
-            public string subType, label;
+            public string type, subType, label;
             public MyDefinitionId blueprint;
             public long amount, avail, locked, quota, minimum;
             public float ratio;
@@ -615,26 +637,27 @@ PhysicalGunObject/
                     foundNewItem = true;
                     typeSubs[itemType].Add(itemSubType);
                     subTypes[itemSubType].Add(itemType);
-                    typeSubData[itemType][itemSubType] = new InventoryItemData(itemSubType, minimum, ratio, label == "" ? isublabel : label, blueprint == "" ? isublabel : blueprint);
+                    typeSubData[itemType][itemSubType] = new InventoryItemData(itemType, itemSubType, minimum, ratio, (label == "") ? isublabel : label, (blueprint == "") ? isublabel : blueprint);
                     if (blueprint != null)
                         blueprintItem[typeSubData[itemType][itemSubType].blueprint] = new ItemId(itemType, itemSubType);
                 }
             }
 
-            private InventoryItemData(string isub, long minimum, float ratio, string label, string blueprint)
+            private InventoryItemData(string itype, string isub, long minimum, float ratio, string label, string blueprint)
             {
-                subType = isub;
+                this.type = itype;
+                this.subType = isub;
                 this.label = label;
-                this.blueprint = blueprint == null ? default(MyDefinitionId) : MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + blueprint);
-                amount = avail = locked = quota = 0L;
-                this.minimum = (long)(minimum * 1000000.0 + 0.5);
-                this.ratio = ratio / 100.0f;
-                qpriority = -1;
-                hold = jam = 0;
-                invenTotal = new Dictionary<IMyInventory, long>();
-                invenSlot = new Dictionary<IMyInventory, int>();
-                producers = new HashSet<IMyFunctionalBlock>();
-                prdSpeed = new Dictionary<string, double>();
+                this.blueprint = (blueprint == null) ? default(MyDefinitionId) : MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + blueprint);
+                this.amount = this.avail = this.locked = this.quota = 0L;
+                this.minimum = (long)((double)minimum * 1000000.0 + 0.5);
+                this.ratio = (ratio / 100.0f);
+                this.qpriority = -1;
+                this.hold = this.jam = 0;
+                this.invenTotal = new Dictionary<IMyInventory, long>();
+                this.invenSlot = new Dictionary<IMyInventory, int>();
+                this.producers = new HashSet<IMyFunctionalBlock>();
+                this.prdSpeed = new Dictionary<string, double>();
             }
         }
 
@@ -671,17 +694,23 @@ PhysicalGunObject/
 
             // initialize panel data
             int unused;
+
+            ScreenFormatter sf = new ScreenFormatter(1, 0, Me);
             ScreenFormatter.Init();
-            panelStatsHeader = "Taleden's Inventory Manager\n" +
-                               VERSION_NICE_TEXT + "\n\n" +
-                               ScreenFormatter.Format("Run", 80, out unused, 1) +
-                               ScreenFormatter.Format("F-Step", 125 + unused, out unused, 1) +
-                               ScreenFormatter.Format("Time", 145 + unused, out unused, 1) +
-                               ScreenFormatter.Format("Load", 105 + unused, out unused, 1) +
-                               ScreenFormatter.Format("S", 65 + unused, out unused, 1) +
-                               ScreenFormatter.Format("R", 65 + unused, out unused, 1) +
-                               ScreenFormatter.Format("A", 65 + unused, out unused, 1) +
-                               "\n\n";
+            panelStatsHeader = (
+                "Taleden's Inventory Manager\n" +
+                VERSION_NICE_TEXT + "\n\n" +
+                sf.Format("Run", 63, out unused, 1) +
+                sf.Format("F-Step", 98 + unused, out unused, 1) +
+                sf.Format("Time", 114 + unused, out unused, 1) +
+                sf.Format("Load", 83 + unused, out unused, 1) +
+                sf.Format("S", 51 + unused, out unused, 1) +
+                sf.Format("R", 51 + unused, out unused, 1) +
+                sf.Format("A", 51 + unused, out unused, 1) +
+                "\n\n"
+            );
+
+            Echo(Me.GetSurface(0).SurfaceSize.X.ToString());
 
             // initialize default items, quotas, labels and blueprints
             // (TIM can also learn new items it sees in inventory)
@@ -704,14 +733,19 @@ PhysicalGunObject/
             timUpdateText = string.Format(FORMAT_TIM_UPDATE_TEXT, VERSION_NICE_TEXT);
         }
 
-        public void Main(string argument)
+        public void Main(string argument, UpdateType updateSource)
         {
+            // /*
+            // reset status and debugging data every cycle
+            // debugLogic.Clear();
+            debugText.Clear();
+            //*/
             // init call
             // do update frequency check
             if (USE_REAL_TIME)
             {
                 DateTime n = DateTime.Now;
-                if (n - currentCycleStartTime >= cycleUpdateWaitTime)
+                if ((n - currentCycleStartTime) >= cycleUpdateWaitTime)
                     currentCycleStartTime = n;
                 else
                 {
@@ -728,9 +762,7 @@ PhysicalGunObject/
             // output terminal info
             EchoR(string.Format(timUpdateText, ++totalCallCount, currentCycleStartTime.ToString("h:mm:ss tt")));
 
-            // reset status and debugging data every cycle
-            debugText.Clear();
-            debugLogic.Clear();
+
             numberTransfers = numberRefineres = numberAssemblers = 0;
 
             try
@@ -774,17 +806,20 @@ PhysicalGunObject/
             // update script status and debug panels on every cycle step
             string msg, stepText;
             int theoryProcessStep = processStep == 0 ? 13 : processStep;
-            int exTime = ExecutionTime;
+            float exTime = (float)Math.Truncate(ExecutionTime * 100) / 100;
             double exLoad = Math.Round(100.0f * ExecutionLoad, 1);
             int unused;
-            statsLog[totalCallCount % statsLog.Length] = ScreenFormatter.Format("" + totalCallCount, 80, out unused, 1) +
-                                                         ScreenFormatter.Format((processStep == 0 ? processSteps.Length : processStep) + " / " + processSteps.Length, 125 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format(exTime + " ms", 145 + unused, out unused, 1) +
-                                                         ScreenFormatter.Format(exLoad + "%", 105 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberTransfers, 65 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberRefineres, 65 + unused, out unused, 1, true) +
-                                                         ScreenFormatter.Format("" + numberAssemblers, 65 + unused, out unused, 1, true) +
-                                                         "\n";
+            ScreenFormatter sf = new ScreenFormatter(1, 1, Me);
+            statsLog[totalCallCount % statsLog.Length] = (
+                sf.Format("" + totalCallCount, 63, out unused, 1) +
+                sf.Format((processStep == 0 ? processSteps.Length : processStep) + " / " + processSteps.Length, 98 + unused, out unused, 1, true) +
+                sf.Format(exTime + " ms", 114 + unused, out unused, 1) +
+                sf.Format(exLoad + "%", 83 + unused, out unused, 1, true) +
+                sf.Format("" + numberTransfers, 51 + unused, out unused, 1, true) +
+                sf.Format("" + numberRefineres, 51 + unused, out unused, 1, true) +
+                sf.Format("" + numberAssemblers, 51 + unused, out unused, 1, true) +
+                "\n"
+            );
             if (processStep == 0 && processStepTmp == 0 && didAtLeastOneProcess)
                 stepText = "all steps";
             else if (processStep == processStepTmp)
@@ -820,7 +855,7 @@ PhysicalGunObject/
                 {
                     long.TryParse(words[1], out minimum);
                     float.TryParse(words[2].Substring(0, (words[2] + "%").IndexOf("%")), out ratio);
-                    InventoryItemData.InitItem(itype, words[0].Substring(1), minimum, ratio, words[3].Trim(), itype == "Ingot" | itype == "Ore" ? null : words[4].Trim());
+                    InventoryItemData.InitItem(itype, words[0].Substring(1), minimum, ratio, words[3].Trim(), (itype == "Ingot" | itype == "Ore") ? null : words[4].Trim());
                 }
             }
         }
@@ -835,7 +870,7 @@ PhysicalGunObject/
                 foreach (string item in blockitems[1].Split(','))
                 {
                     string[] typesub = item.ToUpper().Split('/');
-                    AddBlockRestriction(block[0].Trim(SPACE), block[1].Trim(SPACE), typesub[0], typesub.Length > 1 ? typesub[1] : null, true);
+                    AddBlockRestriction(block[0].Trim(SPACE), block[1].Trim(SPACE), typesub[0], ((typesub.Length > 1) ? typesub[1] : null), true);
                 }
             }
         }
@@ -848,6 +883,8 @@ PhysicalGunObject/
 
         void ProcessScriptArgs()
         {
+            bool updateTagRegex = true;
+
             // init all args back to default
             argRewriteTags = DEFAULT_ARG_REWRITE_TAGS;
             argTagOpen = DEFAULT_ARG_TAG_OPEN;
@@ -894,6 +931,7 @@ PhysicalGunObject/
                             argTagClose = char.ToUpper(value[1]);
                             debugText.Add(string.Format("Tags are delimited by '{0}' and '{1}", argTagOpen, argTagClose));
                         }
+                        updateTagRegex = true;
                         break;
                     case "prefix":
                         argTagPrefix = value.ToUpper();
@@ -901,6 +939,7 @@ PhysicalGunObject/
                             debugText.Add("Tag prefix disabled");
                         else
                             debugText.Add(string.Format("Tag prefix is '{0}'", argTagPrefix));
+                        updateTagRegex = true;
                         break;
                     case "scan":
                         switch (value.ToLower())
@@ -957,12 +996,13 @@ PhysicalGunObject/
                 }
             }
 
-            tagRegex = new System.Text.RegularExpressions.Regex(string.Format(
-                argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
-                System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
-                System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
-                System.Text.RegularExpressions.Regex.Escape(argTagPrefix)), // format in args
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+            if (tagRegex == null || updateTagRegex)
+                tagRegex = new System.Text.RegularExpressions.Regex(string.Format(
+                    argTagPrefix != "" ? FORMAT_TAG_REGEX_BASE_PREFIX : FORMAT_TAG_REGEX_BASE_NO_PREFIX, // select regex statement
+                    System.Text.RegularExpressions.Regex.Escape(argTagOpen.ToString()),
+                    System.Text.RegularExpressions.Regex.Escape(argTagClose.ToString()),
+                    System.Text.RegularExpressions.Regex.Escape(argTagPrefix)), // format in args
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
         }
 
         #endregion
@@ -1003,15 +1043,15 @@ PhysicalGunObject/
         {
             // search for other TIMs
             List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, blk => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
+            GridTerminalSystem.GetBlocksOfType<IMyProgrammableBlock>(blocks, (IMyTerminalBlock blk) => (blk == Me) | (tagRegex.IsMatch(blk.CustomName) & dockedgrids.Contains(blk.CubeGrid)));
 
             // check to see if this block is the first available TIM
             int selfIndex = blocks.IndexOf(Me); // current index in search
             int firstAvailableIndex = blocks.FindIndex(block => block.IsFunctional & block.IsWorking); // first available in search
 
             // update custom name based on current index
-            string updatedCustomName = argTagOpen + argTagPrefix + (blocks.Count > 1 ? " #" + (selfIndex + 1) : "") + argTagClose;
-            Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : Me.CustomName + " " + updatedCustomName;
+            string updatedCustomName = argTagOpen + argTagPrefix + ((blocks.Count > 1) ? (" #" + (selfIndex + 1)) : "") + argTagClose;
+            Me.CustomName = tagRegex.IsMatch(Me.CustomName) ? tagRegex.Replace(Me.CustomName, updatedCustomName, 1) : (Me.CustomName + " " + updatedCustomName);
 
             // if there are other programmable blocks of higher index, then they will execute and we won't
             if (selfIndex != firstAvailableIndex)
@@ -1230,7 +1270,7 @@ PhysicalGunObject/
                 if (bsub != "*" & !init)
                 {
                     foreach (KeyValuePair<string, HashSet<string>> pair in bsubItypeRestr["*"])
-                        itypeRestr[pair.Key] = pair.Value != null ? new HashSet<string>(pair.Value) : null;
+                        itypeRestr[pair.Key] = ((pair.Value != null) ? (new HashSet<string>(pair.Value)) : null);
                 }
             }
             if (isub == null | isub == "*")
@@ -1239,7 +1279,7 @@ PhysicalGunObject/
             }
             else
             {
-                (itypeRestr.TryGetValue(itype, out restr) ? restr : itypeRestr[itype] = new HashSet<string>()).Add(isub);
+                (itypeRestr.TryGetValue(itype, out restr) ? restr : (itypeRestr[itype] = new HashSet<string>())).Add(isub);
             }
             if (!init) debugText.Add(btype + "/" + bsub + " does not accept " + typeLabel[itype] + "/" + subLabel[isub]);
         }
@@ -1299,7 +1339,7 @@ PhysicalGunObject/
             if (amount < 10000L)
                 return "< 0.01";
             if (amount >= 100000000000000L)
-                return "" + amount / 1000000000000L + " M";
+                return "" + (amount / 1000000000000L) + " M";
             scale = (long)Math.Pow(10.0, Math.Floor(Math.Log10(amount)) - 2.0);
             amount = (long)((double)amount / scale + 0.5) * scale;
             if (amount < 1000000000L)
@@ -1344,8 +1384,8 @@ PhysicalGunObject/
                 g2 = (block as IMyMechanicalConnectionBlock).TopGrid;
                 if (g2 == null)
                     continue;
-                (gridLinks.TryGetValue(g1, out grids) ? grids : gridLinks[g1] = new HashSet<IMyCubeGrid>()).Add(g2);
-                (gridLinks.TryGetValue(g2, out grids) ? grids : gridLinks[g2] = new HashSet<IMyCubeGrid>()).Add(g1);
+                (gridLinks.TryGetValue(g1, out grids) ? grids : (gridLinks[g1] = new HashSet<IMyCubeGrid>())).Add(g2);
+                (gridLinks.TryGetValue(g2, out grids) ? grids : (gridLinks[g2] = new HashSet<IMyCubeGrid>())).Add(g1);
             }
 
             // each connected component of mechanical links is a "ship"
@@ -1365,8 +1405,8 @@ PhysicalGunObject/
                         if (!grids.Add(g2))
                             continue;
                         s2 = (g2.Max - g2.Min + Vector3I.One).Size;
-                        g1 = s2 > s1 ? g2 : g1;
-                        s1 = s2 > s1 ? s2 : s1;
+                        g1 = (s2 > s1) ? g2 : g1;
+                        s1 = (s2 > s1) ? s2 : s1;
                         gridShip[g2] = shipGrids.Count;
                         gqueue.AddRange(gridLinks[g2].Except(grids));
                     }
@@ -1380,7 +1420,7 @@ PhysicalGunObject/
             foreach (IMyTerminalBlock block in blocks)
             {
                 conn2 = (block as IMyShipConnector).OtherConnector;
-                if (conn2 != null && block.EntityId < conn2.EntityId & (block as IMyShipConnector).Status == MyShipConnectorStatus.Connected)
+                if (conn2 != null && (block.EntityId < conn2.EntityId & (block as IMyShipConnector).Status == MyShipConnectorStatus.Connected))
                 {
                     tags1.Clear();
                     tags2.Clear();
@@ -1416,8 +1456,8 @@ PhysicalGunObject/
                         shipGrids.Add(new HashSet<IMyCubeGrid> { g2 });
                         shipName.Add(g2.CustomName);
                     }
-                    ((shipShipDocks.TryGetValue(s1, out shipDocks) ? shipDocks : shipShipDocks[s1] = new Dictionary<int, List<string>>()).TryGetValue(s2, out docks) ? docks : shipShipDocks[s1][s2] = new List<string>()).Add(block.CustomName);
-                    ((shipShipDocks.TryGetValue(s2, out shipDocks) ? shipDocks : shipShipDocks[s2] = new Dictionary<int, List<string>>()).TryGetValue(s1, out docks) ? docks : shipShipDocks[s2][s1] = new List<string>()).Add(conn2.CustomName);
+                    ((shipShipDocks.TryGetValue(s1, out shipDocks) ? shipDocks : (shipShipDocks[s1] = new Dictionary<int, List<string>>())).TryGetValue(s2, out docks) ? docks : (shipShipDocks[s1][s2] = new List<string>())).Add(block.CustomName);
+                    ((shipShipDocks.TryGetValue(s2, out shipDocks) ? shipDocks : (shipShipDocks[s2] = new Dictionary<int, List<string>>())).TryGetValue(s1, out docks) ? docks : (shipShipDocks[s2][s1] = new List<string>())).Add(conn2.CustomName);
                 }
             }
 
@@ -1500,7 +1540,7 @@ PhysicalGunObject/
                     // can't sort with no conveyor port
                     invenLocked.Add(block.GetInventory(0));
                 }
-                else if (block is IMyFunctionalBlock && (block as IMyFunctionalBlock).Enabled & block.IsFunctional)
+                else if ((block is IMyFunctionalBlock) && ((block as IMyFunctionalBlock).Enabled & block.IsFunctional))
                 {
                     if ((block is IMyRefinery | block is IMyReactor | block is IMyGasGenerator) & !blockTag.ContainsKey(block))
                     {
@@ -1510,7 +1550,7 @@ PhysicalGunObject/
                     else if (block is IMyAssembler && !(block as IMyAssembler).IsQueueEmpty)
                     {
                         // don't touch input of enabled and active assemblers
-                        invenLocked.Add(block.GetInventory((block as IMyAssembler).Mode == MyAssemblerMode.Disassembly ? 1 : 0));
+                        invenLocked.Add(block.GetInventory(((block as IMyAssembler).Mode == MyAssemblerMode.Disassembly) ? 1 : 0));
                     }
                 }
 
@@ -1526,10 +1566,10 @@ PhysicalGunObject/
                         // identify the stacked item
                         itype = "" + stacks[s].Type.TypeId;
                         itype = itype.Substring(itype.LastIndexOf('_') + 1);
-                        isub = stacks[s].Type.SubtypeId;
+                        isub = stacks[s].Type.SubtypeId.ToString();
 
                         // new type or subtype?
-                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Type.SubtypeId, null);
+                        InventoryItemData.InitItem(itype, isub, 0L, 0.0f, stacks[s].Type.SubtypeId.ToString(), null);
                         itype = itype.ToUpper();
                         isub = isub.ToUpper();
 
@@ -1569,7 +1609,7 @@ PhysicalGunObject/
                 {
                     itype = "" + stack.Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Type.SubtypeId.ToUpper();
+                    isub = stack.Type.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     typeAmount[itype] -= amount;
@@ -1585,7 +1625,7 @@ PhysicalGunObject/
                 {
                     itype = "" + stack.Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stack.Type.SubtypeId.ToUpper();
+                    isub = stack.Type.SubtypeId.ToString().ToUpper();
 
                     amount = (long)((double)stack.Amount * 1e6);
                     data = typeSubData[itype][isub];
@@ -1607,8 +1647,9 @@ PhysicalGunObject/
             string[][] spanLines;
             IMyTextPanel panel2;
             IMySlimBlock slim;
-            Matrix matrix;
-            StringBuilder sb = new StringBuilder();
+            Matrix matrix = new Matrix();
+            //StringBuilder sb = new StringBuilder();
+            sb.Clear();
             List<string> qtypes = new List<string>(), errors = new List<string>(), scalesubs = new List<string>();
             Dictionary<string, SortedDictionary<string, string[]>> qtypeSubCols = new Dictionary<string, SortedDictionary<string, string[]>>();
             InventoryItemData data;
@@ -1616,7 +1657,7 @@ PhysicalGunObject/
 
             // reset ore "quotas"
             foreach (InventoryItemData d in typeSubData["ORE"].Values)
-                d.minimum = d.amount == 0L ? 0L : Math.Max(d.minimum, d.amount);
+                d.minimum = (d.amount == 0L) ? 0L : Math.Max(d.minimum, d.amount);
 
             foreach (IMyTextPanel panel in qpanelPriority.Keys)
             {
@@ -1640,17 +1681,17 @@ PhysicalGunObject/
                     {
                         spanLines[x] = empty;
                         slim = panel.CubeGrid.GetCubeBlock(new Vector3I(panel.Position + x * wide * size * matrix.Right + y * size * matrix.Down));
-                        panel2 = slim != null ? slim.FatBlock as IMyTextPanel : null;
-                        if (panel2 != null && "" + panel2.BlockDefinition == "" + panel.BlockDefinition & panel2.GetPublicTitle().ToUpper().Contains("QUOTAS"))
+                        panel2 = (slim != null) ? (slim.FatBlock as IMyTextPanel) : null;
+                        if (panel2 != null && ("" + panel2.BlockDefinition == "" + panel.BlockDefinition & panel2.GetPublicTitle().ToUpper().Contains("QUOTAS")))
                         {
-                            spanLines[x] = panel2.GetPublicText().Split('\n');
+                            spanLines[x] = panel2.GetText().Split('\n');
                             height = Math.Max(height, spanLines[x].Length);
                         }
                     }
                     for (l = 0; l < height; l++)
                     {
                         for (x = 0; x < spanx; x++)
-                            sb.Append(l < spanLines[x].Length ? spanLines[x][l] : " ");
+                            sb.Append((l < spanLines[x].Length) ? spanLines[x][l] : " ");
                         sb.Append("\n");
                     }
                 }
@@ -1669,7 +1710,7 @@ PhysicalGunObject/
                         if (ParseItemValueText(null, words, itypeCur, out itype, out isub, out p, out amount, out ratio, out force) & itype == itypeCur & itype != "" & isub != "")
                         {
                             data = typeSubData[itype][isub];
-                            qtypeSubCols[itype][isub] = new[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
+                            qtypeSubCols[itype][isub] = new string[] { data.label, "" + Math.Round(amount / 1e6, 2), "" + Math.Round(ratio * 100.0f, 2) + "%" };
                             if ((priority > 0 & (priority < data.qpriority | data.qpriority <= 0)) | (priority == 0 & data.qpriority < 0))
                             {
                                 data.qpriority = priority;
@@ -1702,7 +1743,7 @@ PhysicalGunObject/
                 }
 
                 // redraw quotas
-                sf = new ScreenFormatter(4, 2);
+                sf = new ScreenFormatter(4, 2, Me);
                 sf.SetAlign(1, 1);
                 sf.SetAlign(2, 1);
                 if (qtypes.Count == 0 & qpanelTypes[panel].Count == 0)
@@ -1729,18 +1770,18 @@ PhysicalGunObject/
                     foreach (InventoryItemData d in typeSubData[qtype].Values)
                     {
                         if (!qtypeSubCols[qtype].ContainsKey(d.subType))
-                            qtypeSubCols[qtype][d.subType] = new[] { d.label, "" + Math.Round(d.minimum / 1e6, 2), "" + Math.Round(d.ratio * 100.0f, 2) + "%" };
+                            qtypeSubCols[qtype][d.subType] = new string[] { d.label, "" + Math.Round(d.minimum / 1e6, 2), "" + Math.Round(d.ratio * 100.0f, 2) + "%" };
                     }
                     foreach (string qsub in qtypeSubCols[qtype].Keys)
                     {
                         words = qtypeSubCols[qtype][qsub];
                         sf.Add(0, typeSubData[qtype].ContainsKey(qsub) ? words[0] : words[0].ToLower(), true);
-                        sf.Add(1, words.Length > 1 ? words[1] : "", true);
-                        sf.Add(2, words.Length > 2 ? words[2] : "", true);
-                        sf.Add(3, words.Length > 3 ? words[3] : "", true);
+                        sf.Add(1, (words.Length > 1) ? words[1] : "", true);
+                        sf.Add(2, (words.Length > 2) ? words[2] : "", true);
+                        sf.Add(3, (words.Length > 3) ? words[3] : "", true);
                     }
                 }
-                WriteTableToPanel("TIM Quotas", sf, panel, true, errors.Count == 0 ? "" : String.Join("\n", errors).Trim().ToLower() + "\n\n");
+                WriteTableToPanel("TIM Quotas", sf, panel, true, ((errors.Count == 0) ? "" : (String.Join("\n", errors).Trim().ToLower() + "\n\n")), "");
             }
 
             // update effective quotas
@@ -1760,22 +1801,22 @@ PhysicalGunObject/
                     }
                     if (scalesubs.Count > 0)
                     {
-                        scalesubs.Sort((s1, s2) =>
+                        scalesubs.Sort((string s1, string s2) =>
                         {
                             InventoryItemData d1 = typeSubData[qtype][s1], d2 = typeSubData[qtype][s2];
                             long q1 = (long)(d1.amount / d1.ratio), q2 = (long)(d2.amount / d2.ratio);
-                            return q1 == q2 ? d1.ratio.CompareTo(d2.ratio) : q1.CompareTo(q2);
+                            return (q1 == q2) ? d1.ratio.CompareTo(d2.ratio) : q1.CompareTo(q2);
                         });
                         isub = scalesubs[(scalesubs.Count - 1) / 2];
                         data = typeSubData[qtype][isub];
                         total = (long)(data.amount / data.ratio + 0.5f);
                         if (debug)
                         {
-                            debugText.Add("median " + typeLabel[qtype] + " is " + subLabel[isub] + ", " + total / 1e6 + " -> " + data.amount / 1e6 / data.ratio);
+                            debugText.Add("median " + typeLabel[qtype] + " is " + subLabel[isub] + ", " + (total / 1e6) + " -> " + (data.amount / 1e6 / data.ratio));
                             foreach (string qsub in scalesubs)
                             {
                                 data = typeSubData[qtype][qsub];
-                                debugText.Add("  " + subLabel[qsub] + " @ " + data.amount / 1e6 + " / " + data.ratio + " => " + (long)(data.amount / 1e6 / data.ratio + 0.5f));
+                                debugText.Add("  " + subLabel[qsub] + " @ " + (data.amount / 1e6) + " / " + data.ratio + " => " + (long)(data.amount / 1e6 / data.ratio + 0.5f));
                             }
                         }
                     }
@@ -1783,7 +1824,7 @@ PhysicalGunObject/
                 foreach (InventoryItemData d in typeSubData[qtype].Values)
                 {
                     amount = Math.Max(d.quota, Math.Max(d.minimum, (long)(d.ratio * total + 0.5f)));
-                    d.quota = amount / round * round;
+                    d.quota = (amount / round) * round;
                 }
             }
         }
@@ -1794,7 +1835,7 @@ PhysicalGunObject/
 
         void ParseBlockTags()
         {
-            StringBuilder name = new StringBuilder();
+            sb.Clear();
             IMyTextPanel blkPnl;
             IMyRefinery blkRfn;
             IMyAssembler blkAsm;
@@ -1811,17 +1852,17 @@ PhysicalGunObject/
             {
                 match = blockTag[block];
                 attrs = match.Groups[1].Captures[0].Value.Split(SPACECOMMA, REE);
-                name.Clear();
+                sb.Clear();
                 if (!(grouped = blockGtag.ContainsKey(block)))
                 {
-                    name.Append(block.CustomName, 0, match.Index);
-                    name.Append(argTagOpen);
+                    sb.Append(block.CustomName, 0, match.Index);
+                    sb.Append(argTagOpen);
                     if (argTagPrefix != "")
-                        name.Append(argTagPrefix + " ");
+                        sb.Append(argTagPrefix + " ");
                 }
 
                 // loop over all tag attributes
-                if ((blkPnl = block as IMyTextPanel) != null)
+                if ((blkPnl = (block as IMyTextPanel)) != null)
                 {
                     foreach (string a in attrs)
                     {
@@ -1832,23 +1873,23 @@ PhysicalGunObject/
                         if (attr.Length >= 4 & "STATUS".StartsWith(attr))
                         {
                             if (blkPnl.Enabled) statusPanels.Add(blkPnl);
-                            name.Append("STATUS ");
+                            sb.Append("STATUS ");
                         }
                         else if (attr.Length >= 5 & "DEBUGGING".StartsWith(attr))
                         {
                             if (blkPnl.Enabled) debugPanels.Add(blkPnl);
-                            name.Append("DEBUG ");
+                            sb.Append("DEBUG ");
                         }
                         else if (attr == "SPAN")
                         {
-                            if (fields.Length >= 3 && int.TryParse(fields[1], out spanwide) & int.TryParse(fields[2], out spantall) & spanwide >= 1 & spantall >= 1)
+                            if (fields.Length >= 3 && (int.TryParse(fields[1], out spanwide) & int.TryParse(fields[2], out spantall) & spanwide >= 1 & spantall >= 1))
                             {
                                 panelSpan[blkPnl] = new Pair(spanwide, spantall);
-                                name.Append("SPAN:" + spanwide + ":" + spantall + " ");
+                                sb.Append("SPAN:" + spanwide + ":" + spantall + " ");
                             }
                             else
                             {
-                                name.Append((attr = String.Join(":", fields).ToLower()) + " ");
+                                sb.Append((attr = String.Join(":", fields).ToLower()) + " ");
                                 debugText.Add("Invalid panel span rule: " + attr);
                             }
                         }
@@ -1860,68 +1901,68 @@ PhysicalGunObject/
                         {
                             egg = false;
                             blkPnl.SetValueFloat("FontSize", 0.2f);
-                            blkPnl.WritePublicTitle("TIM the Enchanter");
+                            blkPnl.WritePublicTitle("TIM the Enchanter", false);
                             //blkPnl.WritePublicText(panelFiller, false);
-                            blkPnl.ShowPublicTextOnScreen();
-                            name.Append("THE ENCHANTER ");
+                            blkPnl.ContentType = ContentType.TEXT_AND_IMAGE;
+                            sb.Append("THE ENCHANTER ");
                         }
                         else if (attr.Length >= 3 & "QUOTAS".StartsWith(attr))
                         {
                             if (blkPnl.Enabled & !qpanelPriority.ContainsKey(blkPnl)) qpanelPriority[blkPnl] = 0;
                             if (blkPnl.Enabled & !qpanelTypes.ContainsKey(blkPnl)) qpanelTypes[blkPnl] = new List<string>();
-                            name.Append("QUOTA");
+                            sb.Append("QUOTA");
                             i = 0;
                             while (++i < fields.Length)
                             {
                                 if (ParseItemTypeSub(null, true, fields[i], "", out itype, out isub) & itype != "ORE" & isub == "")
                                 {
                                     if (blkPnl.Enabled) qpanelTypes[blkPnl].Add(itype);
-                                    name.Append(":" + typeLabel[itype]);
+                                    sb.Append(":" + typeLabel[itype]);
                                 }
                                 else if (fields[i].StartsWith("P") & int.TryParse(fields[i].Substring(Math.Min(1, fields[i].Length)), out priority))
                                 {
                                     if (blkPnl.Enabled) qpanelPriority[blkPnl] = Math.Max(0, priority);
-                                    if (priority > 0) name.Append(":P" + priority);
+                                    if (priority > 0) sb.Append(":P" + priority);
                                 }
                                 else
                                 {
-                                    name.Append(":" + fields[i].ToLower());
+                                    sb.Append(":" + fields[i].ToLower());
                                     debugText.Add("Invalid quota panel rule: " + fields[i].ToLower());
                                 }
                             }
-                            name.Append(" ");
+                            sb.Append(" ");
                         }
                         else if (attr.Length >= 3 & "INVENTORY".StartsWith(attr))
                         {
                             if (blkPnl.Enabled & !ipanelTypes.ContainsKey(blkPnl)) ipanelTypes[blkPnl] = new List<string>();
-                            name.Append("INVEN");
+                            sb.Append("INVEN");
                             i = 0;
                             while (++i < fields.Length)
                             {
                                 if (ParseItemTypeSub(null, true, fields[i], "", out itype, out isub) & isub == "")
                                 {
                                     if (blkPnl.Enabled) ipanelTypes[blkPnl].Add(itype);
-                                    name.Append(":" + typeLabel[itype]);
+                                    sb.Append(":" + typeLabel[itype]);
                                 }
                                 else
                                 {
-                                    name.Append(":" + fields[i].ToLower());
+                                    sb.Append(":" + fields[i].ToLower());
                                     debugText.Add("Invalid inventory panel rule: " + fields[i].ToLower());
                                 }
                             }
-                            name.Append(" ");
+                            sb.Append(" ");
                         }
                         else
                         {
-                            name.Append((attr = String.Join(":", fields).ToLower()) + " ");
+                            sb.Append((attr = String.Join(":", fields).ToLower()) + " ");
                             debugText.Add("Invalid panel attribute: " + attr);
                         }
                     }
                 }
                 else
                 {
-                    blkRfn = block as IMyRefinery;
-                    blkAsm = block as IMyAssembler;
+                    blkRfn = (block as IMyRefinery);
+                    blkAsm = (block as IMyAssembler);
                     foreach (string a in attrs)
                     {
                         attr = a.ToUpper();
@@ -1933,29 +1974,29 @@ PhysicalGunObject/
                             i = block.InventoryCount;
                             while (i-- > 0)
                                 invenLocked.Add(block.GetInventory(i));
-                            name.Append(attr + " ");
+                            sb.Append(attr + " ");
                         }
                         else if (attr == "HIDDEN")
                         {
                             i = block.InventoryCount;
                             while (i-- > 0)
                                 invenHidden.Add(block.GetInventory(i));
-                            name.Append("HIDDEN ");
+                            sb.Append("HIDDEN ");
                         }
-                        else if (block is IMyShipConnector & attr == "DOCK")
+                        else if ((block is IMyShipConnector) & attr == "DOCK")
                         {
                             // handled in ScanGrids(), just rewrite
-                            name.Append(String.Join(":", fields) + " ");
+                            sb.Append(String.Join(":", fields) + " ");
                         }
                         else if ((blkRfn != null | blkAsm != null) & attr == "AUTO")
                         {
-                            name.Append("AUTO");
-                            HashSet<string> ores, autoores = blkRfn == null | fields.Length > 1 ? new HashSet<string>() : GetBlockAcceptedSubs(blkRfn, "ORE");
+                            sb.Append("AUTO");
+                            HashSet<string> ores, autoores = (blkRfn == null | fields.Length > 1) ? (new HashSet<string>()) : GetBlockAcceptedSubs(blkRfn, "ORE");
                             HashSet<ItemId> items, autoitems = new HashSet<ItemId>();
                             i = 0;
                             while (++i < fields.Length)
                             {
-                                if (ParseItemTypeSub(null, true, fields[i], blkRfn != null ? "ORE" : "", out itype, out isub) & blkRfn != null == (itype == "ORE") & (blkRfn != null | itype != "INGOT"))
+                                if (ParseItemTypeSub(null, true, fields[i], (blkRfn != null) ? "ORE" : "", out itype, out isub) & (blkRfn != null) == (itype == "ORE") & (blkRfn != null | itype != "INGOT"))
                                 {
                                     if (isub == "")
                                     {
@@ -1968,7 +2009,7 @@ PhysicalGunObject/
                                             foreach (string s in typeSubs[itype])
                                                 autoitems.Add(new ItemId(itype, s));
                                         }
-                                        name.Append(":" + typeLabel[itype]);
+                                        sb.Append(":" + typeLabel[itype]);
                                     }
                                     else
                                     {
@@ -1980,39 +2021,39 @@ PhysicalGunObject/
                                         {
                                             autoitems.Add(new ItemId(itype, isub));
                                         }
-                                        name.Append(":" + (blkRfn == null & subTypes[isub].Count > 1 ? typeLabel[itype] + "/" : "") + subLabel[isub]);
+                                        sb.Append(":" + ((blkRfn == null & subTypes[isub].Count > 1) ? (typeLabel[itype] + "/") : "") + subLabel[isub]);
                                     }
                                 }
                                 else
                                 {
-                                    name.Append(":" + fields[i].ToLower());
+                                    sb.Append(":" + fields[i].ToLower());
                                     debugText.Add("Unrecognized or ambiguous item: " + fields[i].ToLower());
                                 }
                             }
                             if (blkRfn != null)
                             {
                                 if (blkRfn.Enabled)
-                                    (refineryOres.TryGetValue(blkRfn, out ores) ? ores : refineryOres[blkRfn] = new HashSet<string>()).UnionWith(autoores);
+                                    (refineryOres.TryGetValue(blkRfn, out ores) ? ores : (refineryOres[blkRfn] = new HashSet<string>())).UnionWith(autoores);
                             }
                             else if (blkAsm.Enabled)
-                                (assemblerItems.TryGetValue(blkAsm, out items) ? items : assemblerItems[blkAsm] = new HashSet<ItemId>()).UnionWith(autoitems);
-                            name.Append(" ");
+                                (assemblerItems.TryGetValue(blkAsm, out items) ? items : (assemblerItems[blkAsm] = new HashSet<ItemId>())).UnionWith(autoitems);
+                            sb.Append(" ");
                         }
                         else if (!ParseItemValueText(block, fields, "", out itype, out isub, out priority, out amount, out ratio, out force))
                         {
-                            name.Append((attr = String.Join(":", fields).ToLower()) + " ");
+                            sb.Append((attr = String.Join(":", fields).ToLower()) + " ");
                             debugText.Add("Unrecognized or ambiguous item: " + attr);
                         }
                         else if (!block.HasInventory | (block is IMySmallMissileLauncher & !(block is IMySmallMissileLauncherReload | block.BlockDefinition.SubtypeName == "LargeMissileLauncher")) | block is IMyLargeInteriorTurret)
                         {
-                            name.Append(String.Join(":", fields).ToLower() + " ");
+                            sb.Append(String.Join(":", fields).ToLower() + " ");
                             debugText.Add("Cannot sort items to " + block.CustomName + ": no conveyor-connected inventory");
                         }
                         else
                         {
                             if (isub == "")
                             {
-                                foreach (string s in force ? (IEnumerable<string>)typeSubs[itype] : (IEnumerable<string>)GetBlockAcceptedSubs(block, itype))
+                                foreach (string s in (force ? (IEnumerable<string>)typeSubs[itype] : (IEnumerable<string>)GetBlockAcceptedSubs(block, itype)))
                                     AddInvenRequest(block, 0, itype, s, priority, amount);
                             }
                             else
@@ -2023,27 +2064,27 @@ PhysicalGunObject/
                             {
                                 if (force)
                                 {
-                                    name.Append("FORCE:" + typeLabel[itype]);
+                                    sb.Append("FORCE:" + typeLabel[itype]);
                                     if (isub != "")
-                                        name.Append("/" + subLabel[isub]);
+                                        sb.Append("/" + subLabel[isub]);
                                 }
                                 else if (isub == "")
                                 {
-                                    name.Append(typeLabel[itype]);
+                                    sb.Append(typeLabel[itype]);
                                 }
                                 else if (subTypes[isub].Count == 1 || GetBlockImpliedType(block, isub) == itype)
                                 {
-                                    name.Append(subLabel[isub]);
+                                    sb.Append(subLabel[isub]);
                                 }
                                 else
                                 {
-                                    name.Append(typeLabel[itype] + "/" + subLabel[isub]);
+                                    sb.Append(typeLabel[itype] + "/" + subLabel[isub]);
                                 }
                                 if (priority > 0 & priority < int.MaxValue)
-                                    name.Append(":P" + priority);
+                                    sb.Append(":P" + priority);
                                 if (amount >= 0L)
-                                    name.Append(":" + amount / 1e6);
-                                name.Append(" ");
+                                    sb.Append(":" + (amount / 1e6));
+                                sb.Append(" ");
                             }
                         }
                     }
@@ -2051,10 +2092,10 @@ PhysicalGunObject/
 
                 if (argRewriteTags & !grouped)
                 {
-                    if (name[name.Length - 1] == ' ')
-                        name.Length--;
-                    name.Append(argTagClose).Append(block.CustomName, match.Index + match.Length, block.CustomName.Length - match.Index - match.Length);
-                    block.CustomName = name.ToString();
+                    if (sb[sb.Length - 1] == ' ')
+                        sb.Length--;
+                    sb.Append(argTagClose).Append(block.CustomName, match.Index + match.Length, block.CustomName.Length - match.Index - match.Length);
+                    block.CustomName = sb.ToString();
                 }
 
                 if (block.GetUserRelationToOwner(Me.OwnerId) != MyRelationsBetweenPlayerAndBlock.Owner & block.GetUserRelationToOwner(Me.OwnerId) != MyRelationsBetweenPlayerAndBlock.FactionShare)
@@ -2075,7 +2116,7 @@ PhysicalGunObject/
             {
                 parts[0] = parts[0].Trim();
                 parts[1] = parts[1].Trim();
-                if (typeSubs.ContainsKey(parts[0]) && parts[1] == "" | typeSubData[parts[0]].ContainsKey(parts[1]))
+                if (typeSubs.ContainsKey(parts[0]) && (parts[1] == "" | typeSubData[parts[0]].ContainsKey(parts[1])))
                 {
                     // exact type/subtype
                     if (force || BlockAcceptsTypeSub(block, parts[0], parts[1]))
@@ -2090,11 +2131,11 @@ PhysicalGunObject/
                     // type/subtype?
                     t = types.BinarySearch(parts[0]);
                     t = Math.Max(t, ~t);
-                    while (found < 2 & t < types.Count && types[t].StartsWith(parts[0]))
+                    while ((found < 2 & t < types.Count) && types[t].StartsWith(parts[0]))
                     {
                         s = typeSubs[types[t]].BinarySearch(parts[1]);
                         s = Math.Max(s, ~s);
-                        while (found < 2 & s < typeSubs[types[t]].Count && typeSubs[types[t]][s].StartsWith(parts[1]))
+                        while ((found < 2 & s < typeSubs[types[t]].Count) && typeSubs[types[t]][s].StartsWith(parts[1]))
                         {
                             if (force || BlockAcceptsTypeSub(block, types[t], typeSubs[types[t]][s]))
                             {
@@ -2153,7 +2194,7 @@ PhysicalGunObject/
                 // subtype of a known type
                 s = typeSubs[qtype].BinarySearch(parts[0]);
                 s = Math.Max(s, ~s);
-                while (found < 2 & s < typeSubs[qtype].Count && typeSubs[qtype][s].StartsWith(parts[0]))
+                while ((found < 2 & s < typeSubs[qtype].Count) && typeSubs[qtype][s].StartsWith(parts[0]))
                 {
                     found++;
                     itype = qtype;
@@ -2173,7 +2214,7 @@ PhysicalGunObject/
                 // type?
                 t = types.BinarySearch(parts[0]);
                 t = Math.Max(t, ~t);
-                while (found < 2 & t < types.Count && types[t].StartsWith(parts[0]))
+                while ((found < 2 & t < types.Count) && types[t].StartsWith(parts[0]))
                 {
                     if (force || BlockAcceptsTypeSub(block, types[t], ""))
                     {
@@ -2186,14 +2227,14 @@ PhysicalGunObject/
                 // subtype?
                 s = subs.BinarySearch(parts[0]);
                 s = Math.Max(s, ~s);
-                while (found < 2 & s < subs.Count && subs[s].StartsWith(parts[0]))
+                while ((found < 2 & s < subs.Count) && subs[s].StartsWith(parts[0]))
                 {
                     t = subTypes[subs[s]].Count;
                     while (found < 2 & t-- > 0)
                     {
                         if (force || BlockAcceptsTypeSub(block, subTypes[subs[s]][t], subs[s]))
                         {
-                            if (found != 1 || itype != subTypes[subs[s]][t] | isub != "" | typeSubs[itype].Count != 1)
+                            if (found != 1 || (itype != subTypes[subs[s]][t] | isub != "" | typeSubs[itype].Count != 1))
                                 found++;
                             itype = subTypes[subs[s]][t];
                             isub = subs[s];
@@ -2218,7 +2259,7 @@ PhysicalGunObject/
                     isub = mysubs.First();
             }
 
-            return found == 1;
+            return (found == 1);
         }
 
         bool ParseItemValueText(IMyCubeBlock block, string[] fields, string qtype, out string itype, out string isub, out int priority, out long amount, out float ratio, out bool force)
@@ -2231,7 +2272,7 @@ PhysicalGunObject/
             priority = 0;
             amount = -1L;
             ratio = -1.0f;
-            force = block == null;
+            force = (block == null);
 
             // identify the item
             f = 0;
@@ -2310,9 +2351,9 @@ PhysicalGunObject/
                 priority = int.MaxValue;
 
             // new priority/type/sub?
-            tsir = priTypeSubInvenRequest.TryGetValue(priority, out tsir) ? tsir : priTypeSubInvenRequest[priority] = new Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>();
-            sir = tsir.TryGetValue(itype, out sir) ? sir : tsir[itype] = new Dictionary<string, Dictionary<IMyInventory, long>>();
-            ir = sir.TryGetValue(isub, out ir) ? ir : sir[isub] = new Dictionary<IMyInventory, long>();
+            tsir = (priTypeSubInvenRequest.TryGetValue(priority, out tsir) ? tsir : (priTypeSubInvenRequest[priority] = new Dictionary<string, Dictionary<string, Dictionary<IMyInventory, long>>>()));
+            sir = (tsir.TryGetValue(itype, out sir) ? sir : (tsir[itype] = new Dictionary<string, Dictionary<IMyInventory, long>>()));
+            ir = (sir.TryGetValue(isub, out ir) ? ir : (sir[isub] = new Dictionary<IMyInventory, long>()));
 
             // update request
             IMyInventory inven = block.GetInventory(inv);
@@ -2363,11 +2404,11 @@ PhysicalGunObject/
         }
 
         // ================ local persisted vars ================
-        List<int> AllocateItems_priorities;
+        List<int> AllocateItems_priorities = null;
         int AllocateItems_prioritiesIndex;
-        List<string> AllocateItems_inventoryRequestTypes;
+        List<string> AllocateItems_inventoryRequestTypes = null;
         int AllocateItems_inventoryRequestTypesIndex;
-        List<string> AllocateItems_inventoryRequestSubTypes;
+        List<string> AllocateItems_inventoryRequestSubTypes = null;
         int AllocateItems_inventoryRequestSubTypesIndex;
         /// <summary>
         /// Allocates all inventory items.
@@ -2461,7 +2502,7 @@ PhysicalGunObject/
             foreach (IMyInventory reqInven in priTypeSubInvenRequest[priority][itype][isub].Keys)
             {
                 request = priTypeSubInvenRequest[priority][itype][isub][reqInven];
-                if (request != 0L & limited == request >= 0L)
+                if (request != 0L & limited == (request >= 0L))
                 {
                     if (request < 0L)
                     {
@@ -2473,11 +2514,11 @@ PhysicalGunObject/
                     totalrequest += request;
                 }
             }
-            if (debug) debugText.Add("total req=" + totalrequest / 1e6);
+            if (debug) debugText.Add("total req=" + (totalrequest / 1e6));
             if (totalrequest <= 0L)
                 return;
             totalavail = data.avail + data.locked;
-            if (debug) debugText.Add("total avail=" + totalavail / 1e6);
+            if (debug) debugText.Add("total avail=" + (totalavail / 1e6));
 
             // disqualify any locked invens which already have their share
             if (totalavail > 0L)
@@ -2497,11 +2538,11 @@ PhysicalGunObject/
                             amount = (long)((double)request / totalrequest * totalavail);
                             if (limited)
                                 amount = Math.Min(amount, request);
-                            amount = amount / round * round;
+                            amount = (amount / round) * round;
 
                             if (avail >= amount)
                             {
-                                if (debug) debugText.Add("locked " + (amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName) + " gets " + amount / 1e6 + ", has " + avail / 1e6);
+                                if (debug) debugText.Add("locked " + (amtInven.Owner == null ? "???" : (amtInven.Owner as IMyTerminalBlock).CustomName) + " gets " + (amount / 1e6) + ", has " + (avail / 1e6));
                                 dropped++;
                                 totalrequest -= request;
                                 invenRequest[amtInven] = 0L;
@@ -2527,8 +2568,8 @@ PhysicalGunObject/
                 amount = (long)((double)request / totalrequest * totalavail);
                 if (limited)
                     amount = Math.Min(amount, request);
-                amount = amount / round * round;
-                if (debug) debugText.Add((reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + request / 1e6 + " / " + totalrequest / 1e6 + " of " + totalavail / 1e6 + " = " + amount / 1e6);
+                amount = (amount / round) * round;
+                if (debug) debugText.Add((reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName) + " gets " + (request / 1e6) + " / " + (totalrequest / 1e6) + " of " + (totalavail / 1e6) + " = " + (amount / 1e6));
                 totalrequest -= request;
 
                 // check how much it already has
@@ -2549,6 +2590,7 @@ PhysicalGunObject/
                 }
 
                 // get the rest from other unlocked invens
+                moved = 0L;
                 foreach (IMyInventory amtInven in invens)
                 {
                     avail = Math.Min(data.invenTotal[amtInven], amount);
@@ -2569,10 +2611,11 @@ PhysicalGunObject/
                 if (limited & amount > 0L)
                 {
                     debugText.Add("Insufficient " + typeLabel[itype] + "/" + subLabel[isub] + " to satisfy " + (reqInven.Owner == null ? "???" : (reqInven.Owner as IMyTerminalBlock).CustomName));
+                    continue;
                 }
             }
 
-            if (debug) debugText.Add("" + totalavail / 1e6 + " left over");
+            if (debug) debugText.Add("" + (totalavail / 1e6) + " left over");
         }
 
 
@@ -2593,7 +2636,7 @@ PhysicalGunObject/
             {
                 stype = "" + stacks[s].Type.TypeId;
                 stype = stype.Substring(stype.LastIndexOf('_') + 1).ToUpper();
-                ssub = stacks[s].Type.SubtypeId.ToUpper();
+                ssub = stacks[s].Type.SubtypeId.ToString().ToUpper();
                 if (stype == itype & ssub == isub)
                 {
                     moved = stacks[s].Amount;
@@ -2669,10 +2712,10 @@ PhysicalGunObject/
                 {
                     itype = "" + stacks[0].Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Type.SubtypeId.ToUpper();
+                    isub = stacks[0].Type.SubtypeId.ToString().ToUpper();
                     if (typeSubs.ContainsKey(itype) & subTypes.ContainsKey(isub))
                         typeSubData[itype][isub].producers.Add(blk);
-                    if (itype == "ORE" & (ORE_PRODUCT.TryGetValue(isub, out isubIng) ? isubIng : isubIng = isub) != "" & typeSubData["INGOT"].ContainsKey(isubIng))
+                    if (itype == "ORE" & (ORE_PRODUCT.TryGetValue(isub, out isubIng) ? isubIng : (isubIng = isub)) != "" & typeSubData["INGOT"].ContainsKey(isubIng))
                         typeSubData["INGOT"][isubIng].producers.Add(blk);
                     producerWork[blk] = new ProducerWork(new ItemId(itype, isub), (double)stacks[0].Amount);
                 }
@@ -2725,7 +2768,7 @@ PhysicalGunObject/
                         level = (int)(100L * data.amount / data.quota);
                         ores.Add(isubOre);
                         oreLevel[isubOre] = level;
-                        if (debug) debugText.Add("  " + subLabel[isubIngot] + " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + "," + (isubOre == isubIngot ? "" : " Ore/" + subLabel[isubOre]) + " L=" + level + "%");
+                        if (debug) debugText.Add("  " + subLabel[isubIngot] + " @ " + (data.amount / 1e6) + "/" + (data.quota / 1e6) + "," + ((isubOre == isubIngot) ? "" : (" Ore/" + subLabel[isubOre])) + " L=" + level + "%");
                     }
                 }
             }
@@ -2733,21 +2776,21 @@ PhysicalGunObject/
             // identify refineries that are ready for a new assignment
             foreach (IMyRefinery rfn in refineryOres.Keys)
             {
-                itype = isub = isub2 = "";
+                itype = itype2 = isub = isub2 = "";
                 stacks.Clear();
                 rfn.GetInventory(0).GetItems(stacks);
                 if (stacks.Count > 0)
                 {
                     itype = "" + stacks[0].Type.TypeId;
                     itype = itype.Substring(itype.LastIndexOf('_') + 1).ToUpper();
-                    isub = stacks[0].Type.SubtypeId.ToUpper();
+                    isub = stacks[0].Type.SubtypeId.ToString().ToUpper();
                     if (itype == "ORE" & oreLevel.ContainsKey(isub))
                         oreLevel[isub] += Math.Max(1, oreLevel[isub] / refineryOres.Count);
                     if (stacks.Count > 1)
                     {
                         itype2 = "" + stacks[1].Type.TypeId;
                         itype2 = itype2.Substring(itype2.LastIndexOf('_') + 1).ToUpper();
-                        isub2 = stacks[1].Type.SubtypeId.ToUpper();
+                        isub2 = stacks[1].Type.SubtypeId.ToString().ToUpper();
                         if (itype2 == "ORE" & oreLevel.ContainsKey(isub2))
                             oreLevel[isub2] += Math.Max(1, oreLevel[isub2] / refineryOres.Count);
                         AddInvenRequest(rfn, 0, itype2, isub2, -2, (long)((double)stacks[1].Amount * 1e6 + 0.5));
@@ -2756,38 +2799,46 @@ PhysicalGunObject/
                 if (producerWork.TryGetValue(rfn, out work))
                 {
                     data = typeSubData[work.item.type][work.item.subType];
-                    oldspeed = data.prdSpeed.TryGetValue("" + rfn.BlockDefinition, out oldspeed) ? oldspeed : 1.0;
-                    speed = work.item.subType == isub ? Math.Max(work.quantity - (double)stacks[0].Amount, 0.0) : Math.Max(work.quantity, oldspeed);
+                    oldspeed = (data.prdSpeed.TryGetValue("" + rfn.BlockDefinition, out oldspeed) ? oldspeed : 1.0);
+                    speed = ((work.item.subType == isub) ? Math.Max(work.quantity - (double)stacks[0].Amount, 0.0) : Math.Max(work.quantity, oldspeed));
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, 0.2), 10000.0);
                     data.prdSpeed["" + rfn.BlockDefinition] = speed;
-                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + (int)(oldspeed + 0.5) + " -> " + (int)(speed + 0.5) + "kg/cycle");
+                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + rfn.BlockDefinition.SubtypeName + ":" + subLabel[work.item.subType] + " refine speed: " + ((int)(oldspeed + 0.5)) + " -> " + ((int)(speed + 0.5)) + "kg/cycle");
                 }
                 if (refineryOres[rfn].Count > 0) refineryOres[rfn].IntersectWith(oreLevel.Keys); else refineryOres[rfn].UnionWith(oreLevel.Keys);
-                ready = refineryOres[rfn].Count > 0;
+                ready = (refineryOres[rfn].Count > 0);
                 if (stacks.Count > 0)
                 {
-                    speed = itype == "ORE" ? typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0 : 1e6;
+                    speed = (itype == "ORE" ? (typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0) : 1e6);
                     AddInvenRequest(rfn, 0, itype, isub, -1, (long)Math.Min((double)stacks[0].Amount * 1e6 + 0.5, 10 * speed * 1e6 + 0.5));
-                    ready = ready & itype == "ORE" & (double)stacks[0].Amount < 2.5 * speed & stacks.Count == 1;
+                    ready = (ready & itype == "ORE" & (double)stacks[0].Amount < 2.5 * speed & stacks.Count == 1);
                 }
                 if (ready)
                     refineries.Add(rfn);
                 if (debug) debugText.Add(
-                    "  " + rfn.CustomName + (stacks.Count < 1 ? " idle" : " refining " + (int)stacks[0].Amount + "kg " + (isub == "" ? "unknown" : subLabel[isub] + (!oreLevel.ContainsKey(isub) ? "" : " (L=" + oreLevel[isub] + "%)")) + (stacks.Count < 2 ? "" : ", then " + (int)stacks[1].Amount + "kg " + (isub2 == "" ? "unknown" : subLabel[isub2] + (!oreLevel.ContainsKey(isub2) ? "" : " (L=" + oreLevel[isub2] + "%)")))) + "; " + (oreLevel.Count == 0 ? "nothing to do" : ready ? "ready" : refineryOres[rfn].Count == 0 ? "restricted" : "busy")
+                    "  " + rfn.CustomName + ((stacks.Count < 1) ? " idle" : (
+                        " refining " + (int)stacks[0].Amount + "kg " + ((isub == "") ? "unknown" : (
+                            subLabel[isub] + (!oreLevel.ContainsKey(isub) ? "" : (" (L=" + oreLevel[isub] + "%)"))
+                        )) + ((stacks.Count < 2) ? "" : (
+                            ", then " + (int)stacks[1].Amount + "kg " + ((isub2 == "") ? "unknown" : (
+                                subLabel[isub2] + (!oreLevel.ContainsKey(isub2) ? "" : (" (L=" + oreLevel[isub2] + "%)"))
+                            ))
+                        ))
+                    )) + "; " + ((oreLevel.Count == 0) ? "nothing to do" : (ready ? "ready" : ((refineryOres[rfn].Count == 0) ? "restricted" : "busy")))
                 );
             }
 
             // skip refinery:ore assignment if there are no ores or ready refineries
             if (ores.Count > 0 & refineries.Count > 0)
             {
-                ores.Sort((o1, o2) =>
+                ores.Sort((string o1, string o2) =>
                 {
                     string i1, i2;
                     if (!ORE_PRODUCT.TryGetValue(o1, out i1)) i1 = o1;
                     if (!ORE_PRODUCT.TryGetValue(o2, out i2)) i2 = o2;
                     return -1 * typeSubData["INGOT"][i1].quota.CompareTo(typeSubData["INGOT"][i2].quota);
                 });
-                refineries.Sort((r1, r2) => refineryOres[r1].Count.CompareTo(refineryOres[r2].Count));
+                refineries.Sort((IMyRefinery r1, IMyRefinery r2) => refineryOres[r1].Count.CompareTo(refineryOres[r2].Count));
                 foreach (IMyRefinery rfn in refineries)
                 {
                     isub = "";
@@ -2805,10 +2856,10 @@ PhysicalGunObject/
                         numberRefineres++;
                         rfn.UseConveyorSystem = false;
                         priority = rfn.GetInventory(0).IsItemAt(0) ? -4 : -3;
-                        speed = typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0;
+                        speed = (typeSubData["ORE"][isub].prdSpeed.TryGetValue("" + rfn.BlockDefinition, out speed) ? speed : 1.0);
                         AddInvenRequest(rfn, 0, "ORE", isub, priority, (long)(10 * speed * 1e6 + 0.5));
-                        oreLevel[isub] += Math.Min(Math.Max((int)(oreLevel[isub] * 0.41), 1), 100 / refineryOres.Count);
-                        if (debug) debugText.Add("  " + rfn.CustomName + " assigned " + (int)(10 * speed + 0.5) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
+                        oreLevel[isub] += Math.Min(Math.Max((int)(oreLevel[isub] * 0.41), 1), (100 / refineryOres.Count));
+                        if (debug) debugText.Add("  " + rfn.CustomName + " assigned " + ((int)(10 * speed + 0.5)) + "kg " + subLabel[isub] + " (L=" + oreLevel[isub] + "%)");
                     }
                     else if (debug) debugText.Add("  " + rfn.CustomName + " unassigned, nothing to do");
                 }
@@ -2846,7 +2897,7 @@ PhysicalGunObject/
 
             // scan inventory levels
             typeAmount.TryGetValue("COMPONENT", out ttlCmp);
-            amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f) ? d.amount / Math.Max(d.minimum, 17.5 * d.ratio * ttlCmp) : 2.0));
+            amount = 90 + (int)(10 * typeSubData["INGOT"].Values.Min(d => (d.subType != "URANIUM" & (d.minimum > 0L | d.ratio > 0.0f)) ? (d.amount / Math.Max((double)d.minimum, 17.5 * d.ratio * ttlCmp)) : 2.0));
             if (debug) debugText.Add("  Component par L=" + amount + "%");
             foreach (string itype in types)
             {
@@ -2857,12 +2908,12 @@ PhysicalGunObject/
                         data = typeSubData[itype][isub];
                         data.hold = Math.Max(0, data.hold - 1);
                         item = new ItemId(itype, isub);
-                        itemPar[item] = itype == "COMPONENT" & data.ratio > 0.0f ? amount : 100;
+                        itemPar[item] = ((itype == "COMPONENT" & data.ratio > 0.0f) ? amount : 100);
                         level = (int)(100L * data.amount / Math.Max(1L, data.quota));
                         if (data.quota > 0L & level < itemPar[item] & data.blueprint != default(MyDefinitionId))
                         {
                             if (data.hold == 0) itemLevel[item] = level;
-                            if (debug) debugText.Add("  " + typeLabel[itype] + "/" + subLabel[isub] + (data.hold > 0 ? "" : " @ " + data.amount / 1e6 + "/" + data.quota / 1e6 + ", L=" + level + "%") + (data.hold > 0 | data.jam > 0 ? "; HOLD " + data.hold + "/" + 10 * data.jam : ""));
+                            if (debug) debugText.Add("  " + typeLabel[itype] + "/" + subLabel[isub] + ((data.hold > 0) ? "" : (" @ " + (data.amount / 1e6) + "/" + (data.quota / 1e6) + ", L=" + level + "%")) + ((data.hold > 0 | data.jam > 0) ? ("; HOLD " + data.hold + "/" + (10 * data.jam)) : ""));
                         }
                     }
                 }
@@ -2877,16 +2928,16 @@ PhysicalGunObject/
                 if (!asm.IsQueueEmpty)
                 {
                     asm.GetQueue(queue);
-                    data = blueprintItem.TryGetValue(queue[0].BlueprintId, out item) ? typeSubData[item.type][item.subType] : null;
+                    data = (blueprintItem.TryGetValue(queue[0].BlueprintId, out item) ? typeSubData[item.type][item.subType] : null);
                     if (data != null & itemLevel.ContainsKey(item))
                         itemLevel[item] += Math.Max(1, (int)(1e8 * (double)queue[0].Amount / data.quota + 0.5));
-                    if (queue.Count > 1 && blueprintItem.TryGetValue(queue[1].BlueprintId, out item2) & itemLevel.ContainsKey(item2))
+                    if (queue.Count > 1 && (blueprintItem.TryGetValue(queue[1].BlueprintId, out item2) & itemLevel.ContainsKey(item2)))
                         itemLevel[item2] += Math.Max(1, (int)(1e8 * (double)queue[1].Amount / typeSubData[item2.type][item2.subType].quota + 0.5));
                 }
                 if (producerWork.TryGetValue(asm, out work))
                 {
                     data2 = typeSubData[work.item.type][work.item.subType];
-                    oldspeed = data2.prdSpeed.TryGetValue("" + asm.BlockDefinition, out oldspeed) ? oldspeed : 1.0;
+                    oldspeed = (data2.prdSpeed.TryGetValue("" + asm.BlockDefinition, out oldspeed) ? oldspeed : 1.0);
                     if (work.item.type != item.type | work.item.subType != item.subType)
                     {
                         speed = Math.Max(oldspeed, (asm.IsQueueEmpty ? 2 : 1) * work.quantity);
@@ -2905,23 +2956,31 @@ PhysicalGunObject/
                             debugText.Add("  " + asm.CustomName + " is jammed by " + subLabel[item.subType]);
                             producerJam.Remove(asm);
                             asm.ClearQueue();
-                            data2.hold = 10 * (data2.jam < 1 | data2.hold < 1 ? data2.jam = Math.Min(10, data2.jam + 1) : data2.jam);
+                            data2.hold = 10 * ((data2.jam < 1 | data2.hold < 1) ? (data2.jam = Math.Min(10, data2.jam + 1)) : data2.jam);
                             jam = true;
                         }
                     }
                     speed = Math.Min(Math.Max((speed + oldspeed) / 2.0, Math.Max(0.2, 0.5 * oldspeed)), Math.Min(1000.0, 2.0 * oldspeed));
                     data2.prdSpeed["" + asm.BlockDefinition] = speed;
-                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + (int)(oldspeed * 100) / 100.0 + " -> " + (int)(speed * 100) / 100.0 + "/cycle");
+                    if (debug & (int)(oldspeed + 0.5) != (int)(speed + 0.5)) debugText.Add("  Update " + asm.BlockDefinition.SubtypeName + ":" + typeLabel[work.item.type] + "/" + subLabel[work.item.subType] + " assemble speed: " + ((int)(oldspeed * 100) / 100.0) + " -> " + ((int)(speed * 100) / 100.0) + "/cycle");
                 }
                 if (assemblerItems[asm].Count == 0) assemblerItems[asm].UnionWith(itemLevel.Keys); else assemblerItems[asm].IntersectWith(itemLevel.Keys);
-                speed = data != null && data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0;
-                if (!jam & (asm.IsQueueEmpty || (double)queue[0].Amount - asm.CurrentProgress < 2.5 * speed & queue.Count == 1 & asm.Mode == MyAssemblerMode.Assembly))
+                speed = ((data != null && data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed)) ? speed : 1.0);
+                if (!jam & (asm.IsQueueEmpty || (((double)queue[0].Amount - asm.CurrentProgress) < 2.5 * speed & queue.Count == 1 & asm.Mode == MyAssemblerMode.Assembly)))
                 {
-                    if (data2 != null) data2.jam = Math.Max(0, data2.jam - (data2.hold < 1 ? 1 : 0));
-                    if (ready = assemblerItems[asm].Count > 0) assemblers.Add(asm);
+                    if (data2 != null) data2.jam = Math.Max(0, data2.jam - ((data2.hold < 1) ? 1 : 0));
+                    if (ready = (assemblerItems[asm].Count > 0)) assemblers.Add(asm);
                 }
                 if (debug) debugText.Add(
-                    "  " + asm.CustomName + (asm.IsQueueEmpty ? " idle" : (asm.Mode == MyAssemblerMode.Assembly ? " making " : " breaking ") + queue[0].Amount + "x " + (item.type == "" ? "unknown" : subLabel[item.subType] + (!itemLevel.ContainsKey(item) ? "" : " (L=" + itemLevel[item] + "%)")) + (queue.Count <= 1 ? "" : ", then " + queue[1].Amount + "x " + (item2.type == "" ? "unknown" : subLabel[item2.subType] + (!itemLevel.ContainsKey(item2) ? "" : " (L=" + itemLevel[item2] + "%)")))) + "; " + (itemLevel.Count == 0 ? "nothing to do" : ready ? "ready" : assemblerItems[asm].Count == 0 ? "restricted" : "busy")
+                    "  " + asm.CustomName + (asm.IsQueueEmpty ? " idle" : (
+                        ((asm.Mode == MyAssemblerMode.Assembly) ? " making " : " breaking ") + queue[0].Amount + "x " + ((item.type == "") ? "unknown" : (
+                            subLabel[item.subType] + (!itemLevel.ContainsKey(item) ? "" : (" (L=" + itemLevel[item] + "%)"))
+                        )) + ((queue.Count <= 1) ? "" : (
+                            ", then " + queue[1].Amount + "x " + ((item2.type == "") ? "unknown" : (
+                                subLabel[item2.subType] + (!itemLevel.ContainsKey(item2) ? "" : (" (L=" + itemLevel[item2] + "%)"))
+                            ))
+                        ))
+                    )) + "; " + ((itemLevel.Count == 0) ? "nothing to do" : (ready ? "ready" : ((assemblerItems[asm].Count == 0) ? "restricted" : "busy")))
                 );
             }
 
@@ -2930,7 +2989,7 @@ PhysicalGunObject/
             {
                 items = new List<ItemId>(itemLevel.Keys);
                 items.Sort((i1, i2) => -1 * typeSubData[i1.type][i1.subType].quota.CompareTo(typeSubData[i2.type][i2.subType].quota));
-                assemblers.Sort((a1, a2) => assemblerItems[a1].Count.CompareTo(assemblerItems[a2].Count));
+                assemblers.Sort((IMyAssembler a1, IMyAssembler a2) => assemblerItems[a1].Count.CompareTo(assemblerItems[a2].Count));
                 foreach (IMyAssembler asm in assemblers)
                 {
                     item = new ItemId("", "");
@@ -2951,10 +3010,10 @@ PhysicalGunObject/
                         asm.Repeating = false;
                         asm.Mode = MyAssemblerMode.Assembly;
                         data = typeSubData[item.type][item.subType];
-                        speed = data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0;
+                        speed = (data.prdSpeed.TryGetValue("" + asm.BlockDefinition, out speed) ? speed : 1.0);
                         amount = Math.Max((int)(10 * speed), 10);
                         asm.AddQueueItem(data.blueprint, (double)amount);
-                        itemLevel[item] += (int)Math.Ceiling(1e8 * amount / data.quota);
+                        itemLevel[item] += (int)Math.Ceiling(1e8 * (double)amount / data.quota);
                         if (debug) debugText.Add("  " + asm.CustomName + " assigned " + amount + "x " + subLabel[item.subType] + " (L=" + itemLevel[item] + "%)");
                     }
                     else if (debug) debugText.Add("  " + asm.CustomName + " unassigned, nothing to do");
@@ -2980,15 +3039,15 @@ PhysicalGunObject/
             }
             foreach (List<IMyTextPanel> panels in itypesPanels.Values)
             {
-                sf = new ScreenFormatter(6);
+                sf = new ScreenFormatter(6, 0, Me);
                 sf.SetBar(0);
-                sf.SetFill(0);
+                sf.SetFill(0, 1);
                 sf.SetAlign(2, 1);
                 sf.SetAlign(3, 1);
                 sf.SetAlign(4, 1);
                 sf.SetAlign(5, 1);
                 maxamt = maxqta = 0L;
-                foreach (string itype in ipanelTypes[panels[0]].Count > 0 ? ipanelTypes[panels[0]] : types)
+                foreach (string itype in ((ipanelTypes[panels[0]].Count > 0) ? ipanelTypes[panels[0]] : types))
                 {
                     header2 = " Asm ";
                     header5 = "Quota";
@@ -3012,21 +3071,21 @@ PhysicalGunObject/
                     sf.AddBlankRow();
                     foreach (InventoryItemData data in typeSubData[itype].Values)
                     {
-                        sf.Add(0, data.amount == 0L ? "0.0" : "" + (double)data.amount / data.quota);
+                        sf.Add(0, (data.amount == 0L) ? "0.0" : ("" + ((double)data.amount / data.quota)));
                         sf.Add(1, data.label, true);
-                        text = data.producers.Count > 0 ? data.producers.Count + " " + (data.producers.All(blk => !(blk is IMyProductionBlock) || (blk as IMyProductionBlock).IsProducing) ? " " : "!") : data.hold > 0 ? "-  " : "";
+                        text = ((data.producers.Count > 0) ? (data.producers.Count + " " + (data.producers.All(blk => (!(blk is IMyProductionBlock) || (blk as IMyProductionBlock).IsProducing)) ? " " : "!")) : ((data.hold > 0) ? "-  " : ""));
                         sf.Add(2, text, true);
-                        sf.Add(3, data.amount > 0L | data.quota > 0L ? GetShorthand(data.amount) : "");
-                        sf.Add(4, data.quota > 0L ? " / " : "", true);
-                        sf.Add(5, data.quota > 0L ? GetShorthand(data.quota) : "");
+                        sf.Add(3, (data.amount > 0L | data.quota > 0L) ? GetShorthand(data.amount) : "");
+                        sf.Add(4, (data.quota > 0L) ? " / " : "", true);
+                        sf.Add(5, (data.quota > 0L) ? GetShorthand(data.quota) : "");
                         maxamt = Math.Max(maxamt, data.amount);
                         maxqta = Math.Max(maxqta, data.quota);
                     }
                 }
-                sf.SetWidth(3, ScreenFormatter.GetWidth("8.88" + (maxamt >= 1000000000000L ? " M" : maxamt >= 1000000000L ? " K" : ""), true));
-                sf.SetWidth(5, ScreenFormatter.GetWidth("8.88" + (maxqta >= 1000000000000L ? " M" : maxqta >= 1000000000L ? " K" : ""), true));
+                sf.SetWidth(3, sf.GetWidth(new StringBuilder("8.88" + ((maxamt >= 1000000000000L) ? " M" : ((maxamt >= 1000000000L) ? " K" : ""))), true));
+                sf.SetWidth(5, sf.GetWidth(new StringBuilder("8.88" + ((maxqta >= 1000000000000L) ? " M" : ((maxqta >= 1000000000L) ? " K" : ""))), true));
                 foreach (IMyTextPanel panel in panels)
-                    WriteTableToPanel("TIM Inventory", sf, panel);
+                    WriteTableToPanel("TIM Inventory", sf, panel, true);
             }
         }
 
@@ -3034,22 +3093,23 @@ PhysicalGunObject/
         void UpdateStatusPanels()
         {
             long r;
-            StringBuilder sb;
+            //StringBuilder sb;
 
             if (statusPanels.Count > 0)
             {
-                sb = new StringBuilder();
+                //sb = new StringBuilder();
+                sb.Clear();
                 sb.Append(panelStatsHeader);
                 for (r = Math.Max(1, totalCallCount - statsLog.Length + 1); r <= totalCallCount; r++)
                     sb.Append(statsLog[r % statsLog.Length]);
 
                 foreach (IMyTextPanel panel in statusPanels)
                 {
-                    panel.WritePublicTitle("Script Status");
+                    panel.WritePublicTitle("Script Status", false);
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Status panels cannot be spanned");
-                    panel.WritePublicText(sb.ToString());
-                    panel.ShowPublicTextOnScreen();
+                    panel.WriteText(sb.ToString(), false);
+                    panel.ContentType = ContentType.TEXT_AND_IMAGE;
                 }
             }
 
@@ -3062,11 +3122,11 @@ PhysicalGunObject/
                 }
                 foreach (IMyTextPanel panel in debugPanels)
                 {
-                    panel.WritePublicTitle("Script Debugging");
+                    panel.WritePublicTitle("Script Debugging", false);
                     if (panelSpan.ContainsKey(panel))
                         debugText.Add("Debug panels cannot be spanned");
-                    panel.WritePublicText(String.Join("\n", debugText));
-                    panel.ShowPublicTextOnScreen();
+                    panel.WriteText(String.Join("\n", debugText), false);
+                    panel.ContentType = ContentType.TEXT_AND_IMAGE;
                 }
             }
             blockErrors.Clear();
@@ -3096,26 +3156,27 @@ PhysicalGunObject/
 
             // reduce font size to fit everything
             x = sf.GetMinWidth();
-            x = x / spanx + (x % spanx > 0 ? 1 : 0);
+            x = (x / spanx) + ((x % spanx > 0) ? 1 : 0);
             y = sf.GetNumRows();
-            y = y / spany + (y % spany > 0 ? 1 : 0);
-            width = 658 * wide; // TODO monospace 26x17.5 chars
+            y = (y / spany) + ((y % spany > 0) ? 1 : 0);
+            width = 512 * wide; // TODO monospace 26x17.5 chars
             fontsize = panel.GetValueFloat("FontSize");
             if (fontsize < 0.25f)
                 fontsize = 1.0f;
             if (x > 0)
-                fontsize = Math.Min(fontsize, Math.Max(0.5f, width * 100 / x / 100.0f));
+                fontsize = Math.Min(fontsize, Math.Max(0.5f, (float)(width * 100 / x) / 100.0f));
             if (y > 0)
-                fontsize = Math.Min(fontsize, Math.Max(0.5f, 1760 / y / 100.0f));
+                fontsize = Math.Min(fontsize, Math.Max(0.5f, (float)(1760 / y) / 100.0f));
 
             // calculate how much space is available on each panel
-            width = (int)(width / fontsize);
+            width = (int)((float)width / fontsize);
             height = (int)(17.6f / fontsize);
 
             // write to each panel
             if (spanx > 1 | spany > 1)
             {
                 spanLines = sf.ToSpan(width, spanx);
+                //matrix = new Matrix();
                 panel.Orientation.GetMatrix(out matrix);
                 for (x = 0; x < spanx; x++)
                 {
@@ -3123,7 +3184,7 @@ PhysicalGunObject/
                     for (y = 0; y < spany; y++)
                     {
                         slim = panel.CubeGrid.GetCubeBlock(new Vector3I(panel.Position + x * wide * size * matrix.Right + y * size * matrix.Down));
-                        if (slim != null && slim.FatBlock is IMyTextPanel && "" + slim.FatBlock.BlockDefinition == "" + panel.BlockDefinition)
+                        if (slim != null && (slim.FatBlock is IMyTextPanel) && "" + slim.FatBlock.BlockDefinition == "" + panel.BlockDefinition)
                         {
                             spanpanel = slim.FatBlock as IMyTextPanel;
                             rows = Math.Max(0, spanLines[x].Length - r);
@@ -3133,11 +3194,11 @@ PhysicalGunObject/
                             if (r < spanLines[x].Length)
                                 text = String.Join("\n", spanLines[x], r, rows);
                             if (x == 0)
-                                text += y == 0 ? before : y + 1 == spany ? after : "";
+                                text += ((y == 0) ? before : (((y + 1) == spany) ? after : ""));
                             spanpanel.SetValueFloat("FontSize", fontsize);
-                            spanpanel.WritePublicTitle(title + " (" + (x + 1) + "," + (y + 1) + ")");
-                            spanpanel.WritePublicText(text);
-                            spanpanel.ShowPublicTextOnScreen();
+                            spanpanel.WritePublicTitle(title + " (" + (x + 1) + "," + (y + 1) + ")", false);
+                            spanpanel.WriteText(text, false);
+                            spanpanel.ContentType = ContentType.TEXT_AND_IMAGE;
                         }
                         r += height;
                     }
@@ -3146,9 +3207,9 @@ PhysicalGunObject/
             else
             {
                 panel.SetValueFloat("FontSize", fontsize);
-                panel.WritePublicTitle(title);
-                panel.WritePublicText(before + sf.ToString(width) + after);
-                panel.ShowPublicTextOnScreen();
+                panel.WritePublicTitle(title, false);
+                panel.WriteText(before + sf.ToString(width) + after, false);
+                panel.ContentType = ContentType.TEXT_AND_IMAGE;
             }
         }
 
@@ -3159,12 +3220,13 @@ PhysicalGunObject/
         public class ScreenFormatter
         {
             private static Dictionary<char, byte> charWidth = new Dictionary<char, byte>();
-            private static Dictionary<string, int> textWidth = new Dictionary<string, int>();
+            private static Dictionary<StringBuilder, int> textWidth = new Dictionary<StringBuilder, int>();
             private static byte SZ_SPACE;
             private static byte SZ_SHYPH;
 
-            public static int GetWidth(string text, bool memoize = false)
+            public /*static*/ int GetWidth(StringBuilder text, bool memoize = false, float size = 1)
             {
+
                 int width;
                 if (!textWidth.TryGetValue(text, out width))
                 {
@@ -3172,10 +3234,11 @@ PhysicalGunObject/
                     // according to SE's silly branch count metric
                     Dictionary<char, byte> cW = charWidth;
                     string t = text + "\0\0\0\0\0\0\0";
-                    int i = t.Length - t.Length % 8;
-                    byte w0, w1, w2, w3, w4, w5, w6, w7;
+                    int i = t.Length - (t.Length % 8);
+                    //   byte w0, w1, w2, w3, w4, w5, w6, w7;
                     while (i > 0)
                     {
+                        /*
                         cW.TryGetValue(t[i - 1], out w0);
                         cW.TryGetValue(t[i - 2], out w1);
                         cW.TryGetValue(t[i - 3], out w2);
@@ -3184,28 +3247,34 @@ PhysicalGunObject/
                         cW.TryGetValue(t[i - 6], out w5);
                         cW.TryGetValue(t[i - 7], out w6);
                         cW.TryGetValue(t[i - 8], out w7);
-                        width += w0 + w1 + w2 + w3 + w4 + w5 + w6 + w7;
+                        width += w0 + w1 + w2 + w3 + w4 + w5 + w6 + w7;*/
+                        width += (int)me.GetSurface(0).MeasureStringInPixels(text, "Debug", size).X;
                         i -= 8;
                     }
                     if (memoize)
                         textWidth[text] = width;
                 }
+
                 return width;
+                //  */
+
+                //  return (int)me.GetSurface(0).MeasureStringInPixels(text, "Debug", size).X;
             } // GetWidth()
 
-            public static string Format(string text, int width, out int unused, int align = -1, bool memoize = false)
+            public /*static*/ string Format(string text, int width, out int unused, int align = -1, bool memoize = false)
             {
+                StringBuilder sb = new StringBuilder(text);
                 int spaces, bars;
 
                 // '\u00AD' is a "soft hyphen" in UTF16 but Panels don't wrap lines so
                 // it's just a wider space character ' ', useful for column alignment
-                unused = width - GetWidth(text, memoize);
+                unused = width - GetWidth(sb, memoize);
                 if (unused <= SZ_SPACE / 2)
-                    return text;
+                    return sb.ToString();
                 spaces = unused / SZ_SPACE;
                 bars = 0;
                 unused -= spaces * SZ_SPACE;
-                if (2 * unused <= SZ_SPACE + spaces * (SZ_SHYPH - SZ_SPACE))
+                if (2 * unused <= SZ_SPACE + (spaces * (SZ_SHYPH - SZ_SPACE)))
                 {
                     bars = Math.Min(spaces, (int)((float)unused / (SZ_SHYPH - SZ_SPACE) + 0.4999f));
                     spaces -= bars;
@@ -3217,12 +3286,12 @@ PhysicalGunObject/
                     unused -= SZ_SPACE;
                 }
                 if (align > 0)
-                    return new String(' ', spaces) + new String('\u00AD', bars) + text;
+                    return new String(' ', spaces) + new String('\u00AD', bars) + sb;
                 if (align < 0)
-                    return text + new String('\u00AD', bars) + new String(' ', spaces);
-                if (spaces % 2 > 0 & bars % 2 == 0)
-                    return new String(' ', spaces / 2) + new String('\u00AD', bars / 2) + text + new String('\u00AD', bars / 2) + new String(' ', spaces - spaces / 2);
-                return new String(' ', spaces - spaces / 2) + new String('\u00AD', bars / 2) + text + new String('\u00AD', bars - bars / 2) + new String(' ', spaces / 2);
+                    return sb + new String('\u00AD', bars) + new String(' ', spaces);
+                if ((spaces % 2) > 0 & (bars % 2) == 0)
+                    return new String(' ', spaces / 2) + new String('\u00AD', bars / 2) + sb + new String('\u00AD', bars / 2) + new String(' ', spaces - (spaces / 2));
+                return new String(' ', spaces - (spaces / 2)) + new String('\u00AD', bars / 2) + sb + new String('\u00AD', bars - (bars / 2)) + new String(' ', spaces / 2);
             } // Format()
 
             public static string Format(double value, int width, out int unused)
@@ -3231,7 +3300,7 @@ PhysicalGunObject/
                 value = Math.Min(Math.Max(value, 0.0f), 1.0f);
                 spaces = width / SZ_SPACE;
                 bars = (int)(spaces * value + 0.5f);
-                unused = width - spaces * SZ_SPACE;
+                unused = width - (spaces * SZ_SPACE);
                 return new String('I', bars) + new String(' ', spaces - bars);
             } // Format()
 
@@ -3274,7 +3343,7 @@ PhysicalGunObject/
                 Dictionary<char, byte> cW = charWidth;
                 string t = text + "\0\0\0\0\0\0\0";
                 byte w = Math.Max((byte)0, width);
-                int i = t.Length - t.Length % 8;
+                int i = t.Length - (t.Length % 8);
                 while (i > 0)
                 {
                     cW[t[--i]] = w;
@@ -3299,82 +3368,85 @@ PhysicalGunObject/
             private bool[] colBar;
             private int[] colWidth;
 
-            public ScreenFormatter(int numCols, int padding = 1)
+            private IMyProgrammableBlock me;
+
+            public ScreenFormatter(int numCols, int padding = 1, IMyProgrammableBlock Me = null)
             {
+                this.me = Me;
                 this.numCols = numCols;
-                numRows = 0;
+                this.numRows = 0;
                 this.padding = padding;
-                colRowText = new List<string>[numCols];
-                colRowWidth = new List<int>[numCols];
-                colAlign = new int[numCols];
-                colFill = new int[numCols];
-                colBar = new bool[numCols];
-                colWidth = new int[numCols];
+                this.colRowText = new List<string>[numCols];
+                this.colRowWidth = new List<int>[numCols];
+                this.colAlign = new int[numCols];
+                this.colFill = new int[numCols];
+                this.colBar = new bool[numCols];
+                this.colWidth = new int[numCols];
                 for (int c = 0; c < numCols; c++)
                 {
-                    colRowText[c] = new List<string>();
-                    colRowWidth[c] = new List<int>();
-                    colAlign[c] = -1;
-                    colFill[c] = 0;
-                    colBar[c] = false;
-                    colWidth[c] = 0;
+                    this.colRowText[c] = new List<string>();
+                    this.colRowWidth[c] = new List<int>();
+                    this.colAlign[c] = -1;
+                    this.colFill[c] = 0;
+                    this.colBar[c] = false;
+                    this.colWidth[c] = 0;
                 }
             } // ScreenFormatter()
 
             public void Add(int col, string text, bool memoize = false)
             {
                 int width = 0;
-                colRowText[col].Add(text);
-                if (colBar[col] == false)
+                this.colRowText[col].Add(text.ToString());
+                if (this.colBar[col] == false)
                 {
-                    width = GetWidth(text, memoize);
-                    colWidth[col] = Math.Max(colWidth[col], width);
+                    width = GetWidth(new StringBuilder(text), memoize);
+                    this.colWidth[col] = Math.Max(this.colWidth[col], width);
                 }
-                colRowWidth[col].Add(width);
-                numRows = Math.Max(numRows, colRowText[col].Count);
+                this.colRowWidth[col].Add(width);
+                this.numRows = Math.Max(this.numRows, this.colRowText[col].Count);
             } // Add()
 
             public void AddBlankRow()
             {
-                for (int c = 0; c < numCols; c++)
+                for (int c = 0; c < this.numCols; c++)
                 {
-                    colRowText[c].Add("");
-                    colRowWidth[c].Add(0);
+                    this.colRowText[c].Add("");
+                    this.colRowWidth[c].Add(0);
                 }
-                numRows++;
+                this.numRows++;
             } // AddBlankRow()
 
             public int GetNumRows()
             {
-                return numRows;
+                return this.numRows;
             } // GetNumRows()
 
             public int GetMinWidth()
             {
-                int width = padding * SZ_SPACE;
-                for (int c = 0; c < numCols; c++)
-                    width += padding * SZ_SPACE + colWidth[c];
+                int width = this.padding * SZ_SPACE;
+                for (int c = 0; c < this.numCols; c++)
+                    width += this.padding * SZ_SPACE + this.colWidth[c];
                 return width;
             } // GetMinWidth()
 
             public void SetAlign(int col, int align)
             {
-                colAlign[col] = align;
+                this.colAlign[col] = align;
             } // SetAlign()
 
             public void SetFill(int col, int fill = 1)
             {
-                colFill[col] = fill;
+                this.colFill[col] = fill;
             } // SetFill()
 
             public void SetBar(int col, bool bar = true)
             {
-                colBar[col] = bar;
+                this.colBar[col] = bar;
             } // SetBar()
 
             public void SetWidth(int col, int width)
             {
-                colWidth[col] = width;
+                this.colWidth[col] = width;
             } // SetWidth()
 
             public string[][] ToSpan(int width = 0, int span = 1)
@@ -3389,70 +3461,72 @@ PhysicalGunObject/
 
                 // clone the user-defined widths and tally fill columns
                 colWidth = (int[])this.colWidth.Clone();
-                unused = width * span - padding * SZ_SPACE;
+                unused = width * span - this.padding * SZ_SPACE;
                 remaining = 0;
-                for (c = 0; c < numCols; c++)
+                for (c = 0; c < this.numCols; c++)
                 {
-                    unused -= padding * SZ_SPACE;
-                    if (colFill[c] == 0)
+                    unused -= this.padding * SZ_SPACE;
+                    if (this.colFill[c] == 0)
                         unused -= colWidth[c];
-                    remaining += colFill[c];
+                    remaining += this.colFill[c];
                 }
 
                 // distribute remaining width to fill columns
-                for (c = 0; c < numCols & remaining > 0; c++)
+                for (c = 0; c < this.numCols & remaining > 0; c++)
                 {
-                    if (colFill[c] > 0)
+                    if (this.colFill[c] > 0)
                     {
-                        colWidth[c] = Math.Max(colWidth[c], colFill[c] * unused / remaining);
+                        colWidth[c] = Math.Max(colWidth[c], this.colFill[c] * unused / remaining);
                         unused -= colWidth[c];
-                        remaining -= colFill[c];
+                        remaining -= this.colFill[c];
                     }
                 }
 
                 // initialize output arrays
                 spanLines = new string[span][];
                 for (s = 0; s < span; s++)
-                    spanLines[s] = new string[numRows];
+                    spanLines[s] = new string[this.numRows];
                 span--; // make "span" inclusive so "s < span" implies one left
 
                 // render all rows and columns
                 i = 0;
                 sb = new StringBuilder();
-                for (r = 0; r < numRows; r++)
+
+                for (r = 0; r < this.numRows; r++)
                 {
                     sb.Clear();
                     s = 0;
                     remaining = width;
                     unused = 0;
-                    for (c = 0; c < numCols; c++)
+                    for (c = 0; c < this.numCols; c++)
                     {
-                        unused += padding * SZ_SPACE;
-                        if (r >= colRowText[c].Count || colRowText[c][r] == "")
+                        unused += this.padding * SZ_SPACE;
+                        if (r >= this.colRowText[c].Count || colRowText[c][r] == "")
                         {
                             unused += colWidth[c];
                         }
                         else
                         {
                             // render the bar, or fetch the cell text
-                            text = colRowText[c][r];
+                            text = this.colRowText[c][r];
                             charWidth.TryGetValue(text[0], out w);
-                            textwidth = colRowWidth[c][r];
-                            if (colBar[c])
+                            textwidth = this.colRowWidth[c][r];
+                            if (this.colBar[c] == true)
                             {
+                                //value = 0.0;
                                 if (double.TryParse(text, out value))
                                     value = Math.Min(Math.Max(value, 0.0), 1.0);
-                                i = (int)(colWidth[c] / SZ_SPACE * value + 0.5);
+                                i = (int)((colWidth[c] / SZ_SPACE) * value + 0.5);
                                 w = SZ_SPACE;
                                 textwidth = i * SZ_SPACE;
                             }
 
                             // if the column is not left-aligned, calculate left spacing
-                            if (colAlign[c] > 0)
+                            if (this.colAlign[c] > 0)
                             {
-                                unused += colWidth[c] - textwidth;
+                                unused += (colWidth[c] - textwidth);
                             }
-                            else if (colAlign[c] == 0)
+                            else if (this.colAlign[c] == 0)
                             {
                                 unused += (colWidth[c] - textwidth) / 2;
                             }
@@ -3474,17 +3548,17 @@ PhysicalGunObject/
                             remaining += unused;
 
                             // if the column is not right-aligned, calculate right spacing
-                            if (colAlign[c] < 0)
+                            if (this.colAlign[c] < 0)
                             {
-                                unused += colWidth[c] - textwidth;
+                                unused += (colWidth[c] - textwidth);
                             }
-                            else if (colAlign[c] == 0)
+                            else if (this.colAlign[c] == 0)
                             {
-                                unused += colWidth[c] - textwidth - (colWidth[c] - textwidth) / 2;
+                                unused += (colWidth[c] - textwidth) - ((colWidth[c] - textwidth) / 2);
                             }
 
                             // while the bar or text runs to the next span, split it
-                            if (colBar[c])
+                            if (this.colBar[c] == true)
                             {
                                 while (s < span & textwidth > remaining)
                                 {
@@ -3535,7 +3609,7 @@ PhysicalGunObject/
 
             public string ToString(int width = 0)
             {
-                return String.Join("\n", ToSpan(width)[0]);
+                return String.Join("\n", this.ToSpan(width, 1)[0]);
             } // ToString()
 
         }
